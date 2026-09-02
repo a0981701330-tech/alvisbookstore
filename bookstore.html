@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>長衫客書坊 · 讀書人的事，能算偷麼？</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sand: { 50: '#FAF8F5', 100: '#F5F2EB', 200: '#EBE5D8' },
+            nordic: {
+              dark: '#24282F',
+              slate: '#3D444E',
+              muted: '#767F8D',
+              sage: '#7C8E79',
+              warmtaupe: '#9C8F7F',
+              border: '#E8E5DE'
+            }
+          },
+          fontFamily: {
+            serif: ['"Noto Serif TC"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', '"Noto Sans TC"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #F8F6F1;
+      font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif;
+      color: #2D3136;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-serif-title { font-family: 'Noto Serif TC', serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #D9D3C7; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #BCB4A4; }
+  </style>
+</head>
+<body class="min-h-screen py-8 md:py-12 px-4 md:px-8">
+  <div id="app" class="max-w-5xl mx-auto">
+    
+    <!-- 頁首與統計 -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between pb-6 mb-6 border-b border-nordic-border gap-6">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-nordic-sage inline-block"></span>
+          <span class="text-xs tracking-widest uppercase font-semibold text-nordic-muted">Personal Bookshelf</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
+        <p class="text-xs md:text-sm font-serif-title text-nordic-muted mt-1.5 tracking-wide">讀書人的事，能算偷麼？</p>
+      </div>
+
+      <div class="grid grid-cols-4 gap-2.5">
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+          <div class="text-[11px] text-nordic-muted">總藏書</div>
+          <div class="text-base md:text-lg font-bold text-nordic-dark">{{ books.length }}</div>
+        </div>
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+          <div class="text-[11px] text-nordic-sage font-medium">閱讀完畢</div>
+          <div class="text-base md:text-lg font-bold text-nordic-sage">{{ stats.finished }}</div>
+        </div>
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+          <div class="text-[11px] text-[#A37844] font-medium">閱讀中</div>
+          <div class="text-base md:text-lg font-bold text-[#A37844]">{{ stats.reading }}</div>
+        </div>
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+          <div class="text-[11px] text-[#556951] font-medium">在家</div>
+          <div class="text-base md:text-lg font-bold text-[#556951]">{{ stats.home }}</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 工具列：數據分析開關、備份與重置 -->
+    <div class="flex justify-between items-center mb-6 gap-2">
+      <!-- 儀表板切換按鈕 -->
+      <button @click="showDashboard = !showDashboard" 
+              :class="showDashboard ? 'bg-nordic-dark text-white' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
+              class="text-xs font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5">
+        <span>{{ showDashboard ? '✕ 收合數據分析' : '📊 即時數據分析 (Excel指標)' }}</span>
+      </button>
+
+      <div class="flex gap-2">
+        <button @click="exportData" class="text-xs font-medium bg-white hover:bg-sand-100 border border-nordic-border px-3 py-1.5 rounded-lg shadow-sm transition">
+          ↓ 匯出備份 (JSON)
+        </button>
+        <label class="text-xs font-medium bg-white hover:bg-sand-100 border border-nordic-border px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
+          ↑ 匯入備份
+          <input type="file" @change="importData" class="hidden" accept=".json" />
+        </label>
+        <button @click="resetToDefault" class="text-xs text-gray-400 hover:text-red-600 px-2 py-1.5 transition">
+          重置原檔
+        </button>
+      </div>
+    </div>
+
+    <!-- 即時數據分析儀表板 (展開區塊) -->
+    <section v-if="showDashboard" class="bg-white rounded-2xl p-6 border border-nordic-border shadow-sm mb-8 space-y-6 transition-all duration-300">
+      <div class="flex justify-between items-center border-b border-sand-100 pb-3">
+        <h2 class="text-xs font-bold text-nordic-slate uppercase tracking-wider flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-nordic-sage"></span>
+          即時數據統計分析 (隨任何改動實時聯動)
+        </h2>
+        <span class="text-[11px] text-nordic-muted">更新頻率: 0秒延遲</span>
+      </div>
+
+      <!-- 第一排：完成度進度條 + 新舊比 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 完成度 -->
+        <div class="bg-sand-50/70 p-4 rounded-xl border border-nordic-border/60">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-semibold text-nordic-slate">📖 閱讀完成度</span>
+            <span class="text-xs font-bold text-nordic-sage">{{ analytics.readRate }}%</span>
+          </div>
+          <!-- 雙色進度條 -->
+          <div class="w-full bg-sand-200 h-2.5 rounded-full overflow-hidden flex">
+            <div :style="{ width: analytics.readRate + '%' }" class="bg-nordic-sage transition-all duration-500" title="閱讀完畢"></div>
+            <div :style="{ width: analytics.readingRate + '%' }" class="bg-[#D9A75E] transition-all duration-500" title="閱讀中"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
+            <span>完畢: {{ stats.finished }} 本</span>
+            <span>閱讀中: {{ stats.reading }} 本</span>
+            <span>待讀: {{ stats.unread }} 本</span>
+          </div>
+        </div>
+
+        <!-- 新舊比 -->
+        <div class="bg-sand-50/70 p-4 rounded-xl border border-nordic-border/60">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-semibold text-nordic-slate">🏷️ 新書 / 二手書比率</span>
+            <span class="text-xs text-nordic-muted">二手 {{ analytics.usedPercent }}%</span>
+          </div>
+          <div class="w-full bg-sand-200 h-2.5 rounded-full overflow-hidden flex">
+            <div :style="{ width: analytics.newPercent + '%' }" class="bg-nordic-dark transition-all duration-500" title="新書"></div>
+            <div :style="{ width: analytics.usedPercent + '%' }" class="bg-nordic-warmtaupe transition-all duration-500" title="二手書"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
+            <span>新書: {{ analytics.newCount }} 本 ({{ analytics.newPercent }}%)</span>
+            <span>二手: {{ analytics.usedCount }} 本 ({{ analytics.usedPercent }}%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第二排：作者、出版社、出處 Top 5 榜單 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+        <!-- 作者比率 Top 5 -->
+        <div class="space-y-2.5">
+          <h3 class="text-xs font-semibold text-nordic-slate flex items-center justify-between">
+            <span>✍️ 熱門作者 (Top 5)</span>
+            <span class="text-[10px] text-nordic-muted">冊數</span>
+          </h3>
+          <div class="space-y-1.5">
+            <div v-for="a in analytics.topAuthors" :key="a.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
+              <span class="truncate max-w-[130px] text-nordic-dark font-medium">{{ a.name }}</span>
+              <div class="flex items-center gap-2">
+                <div class="w-16 bg-sand-200 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-nordic-slate h-full" :style="{ width: (a.count / books.length * 100 * 3) + '%' }"></div>
+                </div>
+                <span class="font-mono text-[11px] text-nordic-muted w-4 text-right">{{ a.count }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 出版商比率 Top 5 -->
+        <div class="space-y-2.5">
+          <h3 class="text-xs font-semibold text-nordic-slate flex items-center justify-between">
+            <span>🏛️ 主要出版社 (Top 5)</span>
+            <span class="text-[10px] text-nordic-muted">冊數</span>
+          </h3>
+          <div class="space-y-1.5">
+            <div v-for="p in analytics.topPublishers" :key="p.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
+              <span class="truncate max-w-[130px] text-nordic-dark font-medium">{{ p.name }}</span>
+              <div class="flex items-center gap-2">
+                <div class="w-16 bg-sand-200 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-nordic-warmtaupe h-full" :style="{ width: (p.count / books.length * 100 * 3) + '%' }"></div>
+                </div>
+                <span class="font-mono text-[11px] text-nordic-muted w-4 text-right">{{ p.count }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 出處分佈 Top 5 -->
+        <div class="space-y-2.5">
+          <h3 class="text-xs font-semibold text-nordic-slate flex items-center justify-between">
+            <span>🛒 購書出處 (Top 5)</span>
+            <span class="text-[10px] text-nordic-muted">冊數</span>
+          </h3>
+          <div class="space-y-1.5">
+            <div v-for="s in analytics.topSources" :key="s.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
+              <span class="truncate max-w-[130px] text-nordic-dark font-medium">{{ s.name }}</span>
+              <div class="flex items-center gap-2">
+                <div class="w-16 bg-sand-200 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-nordic-sage h-full" :style="{ width: (s.count / books.length * 100 * 3) + '%' }"></div>
+                </div>
+                <span class="font-mono text-[11px] text-nordic-muted w-4 text-right">{{ s.count }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 篩選與搜尋列 -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+      <div class="flex flex-wrap items-center gap-1.5 text-xs">
+        <span class="text-nordic-muted mr-1">狀態:</span>
+        <button v-for="loc in locationFilters" :key="loc.val" 
+                @click="filterLocation = loc.val"
+                :class="filterLocation === loc.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
+                class="px-3 py-1.5 rounded-lg transition">
+          {{ loc.label }}
+        </button>
+
+        <span class="text-nordic-muted ml-3 mr-1">閱讀:</span>
+        <button v-for="rf in readFilters" :key="rf.val"
+                @click="filterRead = rf.val"
+                :class="filterRead === rf.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
+                class="px-3 py-1.5 rounded-lg transition">
+          {{ rf.label }}
+        </button>
+      </div>
+
+      <div class="relative w-full md:w-64">
+        <input v-model="searchQuery" placeholder="搜尋書名、作者、出版商、出處..."
+               class="w-full bg-white border border-nordic-border rounded-xl pl-8 pr-3 py-2 text-xs md:text-sm text-nordic-dark placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-nordic-slate transition shadow-sm" />
+        <span class="absolute left-2.5 top-2.5 text-gray-400 text-xs">🔍</span>
+      </div>
+    </div>
+
+    <!-- 書籍清單表格 -->
+    <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
+      <div v-if="filteredBooks.length === 0" class="py-12 text-center text-nordic-muted text-sm font-light">
+        無符合條件的書籍
+      </div>
+
+      <!-- 已有書籍列表 -->
+      <div v-for="(b, idx) in filteredBooks" :key="b.id" 
+           class="p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-sand-50/60 transition">
+        
+        <!-- 左側：序號 + 書名、作者、出版社（無橫線） -->
+        <div class="flex items-start gap-3 min-w-0 flex-1">
+          <span class="mt-0.5 text-xs font-mono font-medium text-nordic-muted/80 bg-sand-100 px-1.5 py-0.5 rounded flex-shrink-0">
+            {{ formatIndex(idx + 1) }}
+          </span>
+
+          <div class="min-w-0 flex-1">
+            <h3 class="font-serif-title font-semibold text-base md:text-lg text-nordic-dark tracking-tight">
+              {{ b.title }}
+            </h3>
+
+            <p class="text-xs md:text-sm text-nordic-muted mt-1 flex flex-wrap items-center gap-2">
+              <span v-if="b.author" class="text-nordic-slate font-medium">{{ b.author }}</span>
+              <span v-if="b.author && b.publisher" class="text-gray-300">•</span>
+              <span v-if="b.publisher">{{ b.publisher }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- 右側：閱讀進度選單 + 新/二手選單 + 購入地點選單 + 狀態選單 + 刪除 -->
+        <div class="flex items-center justify-between md:justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100 flex-wrap">
+          
+          <!-- 閱讀進度下拉選單（即時同步儀表板） -->
+          <select v-model="b.readingStatus" 
+                  :class="getReadingStatusStyle(b.readingStatus)"
+                  class="text-xs font-medium rounded-lg px-2.5 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+            <option value="未讀">待讀</option>
+            <option value="閱讀中">📖 閱讀中</option>
+            <option value="閱讀完畢">✓ 閱讀完畢</option>
+          </select>
+
+          <!-- 新/二手下拉選單（即時同步儀表板） -->
+          <select v-model="b.type" 
+                  :class="b.type === '二手' ? 'bg-[#EAE4D9] text-[#635748]' : 'bg-sand-100 text-nordic-slate'"
+                  class="text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+            <option value="新">新書</option>
+            <option value="二手">二手</option>
+          </select>
+
+          <!-- 購入地點下拉選單（即時同步儀表板） -->
+          <select v-model="b.source" 
+                  class="text-xs text-nordic-slate bg-sand-100 hover:bg-sand-200/80 rounded-lg px-2.5 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+            <option value="">🛒 未填出處</option>
+            <option v-for="src in sourceOptions" :key="src" :value="src">{{ src }}</option>
+          </select>
+
+          <!-- 狀態下拉選單（在家 / 在租屋處 / 售出） -->
+          <select v-model="b.location" 
+                  :class="getLocationBadgeStyle(b.location)"
+                  class="text-xs font-medium rounded-lg px-2.5 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+            <option value="在家">📍 在家</option>
+            <option value="在租屋處">🏢 在租屋處</option>
+            <option value="售出">🏷️ 售出</option>
+          </select>
+
+          <!-- 刪除書籍 -->
+          <button @click="deleteBook(b.id)" class="text-gray-300 hover:text-red-500 text-xs p-1.5 transition" title="刪除書籍">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 底部新增欄位 (Inline Quick Add Row) -->
+      <div class="p-4 md:p-5 bg-sand-50/70 hover:bg-sand-50 transition border-t-2 border-dashed border-nordic-border/70">
+        <form @submit.prevent="addBook" class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          
+          <div class="flex items-center gap-3 flex-1">
+            <span class="text-nordic-muted text-base pl-1">+</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
+              <input v-model.trim="newBook.title" placeholder="書名 *" required
+                     class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
+              
+              <input v-model.trim="newBook.author" placeholder="作者"
+                     class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
+              
+              <input v-model.trim="newBook.publisher" placeholder="出版社"
+                     class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            <!-- 閱讀進度選單 -->
+            <select v-model="newBook.readingStatus" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+              <option value="未讀">待讀</option>
+              <option value="閱讀中">📖 閱讀中</option>
+              <option value="閱讀完畢">✓ 閱讀完畢</option>
+            </select>
+
+            <!-- 新舊書 -->
+            <select v-model="newBook.type" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+              <option value="新">新書</option>
+              <option value="二手">二手</option>
+            </select>
+
+            <!-- 購入出處選單 -->
+            <select v-model="newBook.source" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+              <option value="">出處 (可選)</option>
+              <option v-for="src in sourceOptions" :key="src" :value="src">{{ src }}</option>
+            </select>
+
+            <!-- 狀態選單 -->
+            <select v-model="newBook.location" class="bg-white border border-nordic-border rounded-lg px-2.5 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+              <option value="在家">📍 在家</option>
+              <option value="在租屋處">🏢 在租屋處</option>
+              <option value="售出">🏷️ 售出</option>
+            </select>
+
+            <button type="submit" class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-3 py-1.5 rounded-lg shadow-sm font-medium transition">
+              新增書籍
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+
+    <!-- 頁尾署名 -->
+    <footer class="mt-12 text-center text-xs tracking-widest text-nordic-muted/80 font-medium pb-8 uppercase">
+      MUBONE STUDIO
+    </footer>
+
+  </div>
+
+  <script>
+    const INITIAL_BOOKS = [
+      {"id": 1, "title": "小王子", "author": "聖修伯里", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 2, "title": "安妮的日記", "author": "安妮法蘭克", "publisher": "志文出版社", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 3, "title": "正義者", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 4, "title": "瘟疫", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 5, "title": "反抗者", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 6, "title": "變形記", "author": "卡夫卡", "publisher": "菓子文化", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 7, "title": "人間失格", "author": "太宰治", "publisher": "亞洲圖書", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 8, "title": "金閣寺", "author": "三島由紀夫", "publisher": "野人", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 9, "title": "羅生門", "author": "芥川龍之介", "publisher": "好讀", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 10, "title": "蒼蠅王", "author": "威廉高汀", "publisher": "高寶書版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 11, "title": "傻子伊凡", "author": "列夫托爾斯泰", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 12, "title": "1984", "author": "喬治歐維爾", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 13, "title": "動物農莊", "author": "喬治歐維爾", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 14, "title": "異鄉人", "author": "卡繆", "publisher": "麥田出版", "type": "新", "location": "在家", "source": "讀冊(線上)", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 15, "title": "薛西弗斯的神話", "author": "卡繆", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 16, "title": "辛德勒的名單", "author": "湯瑪斯肯納利", "publisher": "時報文化", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 17, "title": "解憂雜貨店", "author": "東野圭吾", "publisher": "皇冠", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 18, "title": "香水", "author": "徐四金", "publisher": "皇冠", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 19, "title": "美國狙擊手", "author": "克里斯凱爾", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 20, "title": "臺灣漫遊錄", "author": "楊双子", "publisher": "春山出版", "type": "二手", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 21, "title": "偷書賊", "author": "馬格斯朱薩克", "publisher": "木馬文化", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 22, "title": "少年P的奇幻漂流", "author": "楊馬泰爾", "publisher": "皇冠", "type": "二手", "location": "在家", "source": "雲林建忠書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 23, "title": "隔離島", "author": "丹尼斯勒翰", "publisher": "臉譜", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 24, "title": "魔戒前傳:哈比人歷險記", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 25, "title": "魔戒首部曲:魔戒現身", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 26, "title": "魔戒二部曲:雙城奇謀", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 27, "title": "魔戒三部曲:王者再臨", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 28, "title": "暗夜天使", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 29, "title": "沉淪 [暗夜天使二]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 30, "title": "暗湧 [暗夜天使三]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 31, "title": "終曲 [暗夜天使四]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 32, "title": "莫斯科紳士", "author": "亞莫爾托歐斯", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 33, "title": "成為怪物的孩子們", "author": "李玉秀/姜美/鄭明燮/朱元圭/千誌允", "publisher": "時報文化", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 34, "title": "鬼地方", "author": "陳思宏", "publisher": "鏡文學", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 35, "title": "極限返航", "author": "安迪威爾", "publisher": "三采文化", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 36, "title": "地獄修業旅行", "author": "匡靈秀", "publisher": "臉譜", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 37, "title": "玻璃之顏", "author": "法蘭西絲哈汀吉", "publisher": "青林出版社", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 38, "title": "老派攝影", "author": "王啟文", "publisher": "有鹿", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 39, "title": "儒林外史", "author": "吳敬梓", "publisher": "世一", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 40, "title": "Me Before You", "author": "Jojo Moyes", "publisher": "Penguin books", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 41, "title": "滾滾長江東流水", "author": "various artists", "publisher": "人人出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 42, "title": "麥迪遜之橋", "author": "羅伯J華勒", "publisher": "時報文化", "type": "二手", "location": "在家", "source": "舅舅贈送", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 43, "title": "海邊的房間", "author": "黃麗群", "publisher": "時報文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 44, "title": "去你的正常世界", "author": "大坦誠", "publisher": "如何", "type": "二手", "location": "在家", "source": "Mick贈送", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 45, "title": "神的經濟學", "author": "宇山卓榮", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 46, "title": "臺灣之子", "author": "陳水扁", "publisher": "晨星出版", "type": "新", "location": "在家", "source": "台南墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 47, "title": "SPARE", "author": "Prince Harry", "publisher": "Random Hosue", "type": "新", "location": "在家", "source": "博客來(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 48, "title": "The Hunger Games", "author": "Suzanne Collins", "publisher": "Scholastic Press", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 49, "title": "Twilight", "author": "Stephenie Meyer", "publisher": "Little Brown", "type": "二手", "location": "在家", "source": "學弟贈送", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 50, "title": "The Lightning Thief", "author": "Rick Riordan", "publisher": "Penguin books", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 51, "title": "我吃了那男孩一整年的早餐", "author": "尾巴", "publisher": "尖端出版", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 52, "title": "奧德賽", "author": "荷馬", "publisher": "聯經", "type": "新", "location": "在家", "source": "麗寶金石堂", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 53, "title": "嘔吐", "author": "沙特", "publisher": "麥田出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 54, "title": "小偵探愛彌兒", "author": "耶里希.凱斯特納", "publisher": "小麥田", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 55, "title": "讀古人的閒適,治今人的焦慮", "author": "琹涵", "publisher": "九歌", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 56, "title": "電影院的哲學家", "author": "郝廣才", "publisher": "格林文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 57, "title": "看電影 喇D賽:閱讀電影 體悟人生", "author": "魏尚世", "publisher": "魏尚世", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 58, "title": "有關電影的100個經典故事", "author": "楊明華", "publisher": "驛站", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 59, "title": "失控的焦慮世代", "author": "強納森·海德特", "publisher": "網路與書", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 60, "title": "二手書店店員日記", "author": "尚恩 貝西爾", "publisher": "聯經", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 61, "title": "別再當「背多分」!:東大教授親授, 深化思考的最強自學法", "author": "柳川範之", "publisher": "楓書坊", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 62, "title": "一本搞定K書、考試、時間管理的學習聖經", "author": "朗恩. 費瑞", "publisher": "商周出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 63, "title": "像科學家一樣思考:明辨是非、避免偏誤, 新世代必備的核心素養", "author": "史坦利.萊斯", "publisher": "商周出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 64, "title": "記憶書店", "author": "宋侑庭", "publisher": "春天出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 65, "title": "時光庇護所", "author": "吉奧基. 戈斯波丁諾夫", "publisher": "寂寞", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 66, "title": "你好，我是書店員:今天想找哪本書？59則和買書有關的讀者故事，還有職人的工作日常與推書清單", "author": "森田惠 ", "publisher": "幸福文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 67, "title": "希臘羅馬神話:永恆的諸神、英雄、愛情與冒險故事", "author": "伊迪絲·漢彌敦", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 68, "title": "思辨的力量:從法國高中哲學教育, 培養獨立思考能力", "author": "坂本尚志", "publisher": "楓樹林", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 69, "title": "看一次就懂徹底學會英文句型 ", "author": "王琳詔", "publisher": "希伯崙", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 70, "title": "人間失格", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 71, "title": "百年孤寂", "author": "加布列.賈西亞.馬奎斯", "publisher": "皇冠", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 72, "title": "我們", "author": "尤金.薩米爾欽", "publisher": "遍路文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 73, "title": "美麗新世界", "author": "阿道斯.赫胥黎", "publisher": "遍路文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 74, "title": "王陽明哲學", "author": "蔡仁厚", "publisher": "三民書局", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 75, "title": "江南案拼圖：改變中華民國國運的關鍵", "author": "李天鐸", "publisher": "時報", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 76, "title": "馬克思與馬克思主義", "author": "格雷戈里.克雷斯", "publisher": "麥田", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 77, "title": "自己的看法讀古文談寫作", "author": "凌性傑", "publisher": "麥田", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 78, "title": "銀翼殺手", "author": "菲利普 狄克", "publisher": "寂寞出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 79, "title": "半憂鬱: 給能工作, 能生活, 內心卻動彈不得的你", "author": "平光源", "publisher": "如何出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 80, "title": "想我苦哈哈的一生", "author": "詹姆斯瑟伯", "publisher": "逗點文創社", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 81, "title": "華氏451度 圖像小說", "author": " 雷．布萊伯利, 提姆．漢彌爾頓", "publisher": "麥田", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 82, "title": "那本書是", "author": " 又吉直樹, 吉竹伸介", "publisher": "皇冠", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 83, "title": "四維街一號", "author": "楊双子", "publisher": "春山出版", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 84, "title": "告白", "author": "湊佳苗", "publisher": "時報出版", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 85, "title": "好電影的法則: 101堂電影大師受用一生的UCLA電影課", "author": "Neil Landau", "publisher": "原點出版", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
+      {"id": 86, "title": "任何事都會不順利的完成", "author": "盧建彰", "publisher": "有鹿文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 87, "title": "地獄變", "author": "芥川龍之介", "publisher": "大牌文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
+      {"id": 88, "title": "斜陽", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"}
+    ];
+
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+
+    createApp({
+      setup() {
+        const books = ref([]);
+        const filterLocation = ref('all');
+        const filterRead = ref('all');
+        const searchQuery = ref('');
+        const showDashboard = ref(true); // 預設展開數據面板
+
+        const sourceOptions = [
+          '台中墊腳石', '台南墊腳石', '台中茉莉二手書店', '台南珍寶書坊',
+          '大遠百誠品', '台中中友百貨誠品', '誠品線上', '博客來(線上)',
+          '讀冊(線上)', '書寶(線上)', '蝦皮', '雲林建忠書店',
+          '雲林田納西書店', '麗寶金石堂', '電子書', '舅舅贈送', '學弟贈送', 'Mick贈送'
+        ];
+
+        const newBook = ref({
+          title: '',
+          author: '',
+          publisher: '',
+          source: '',
+          location: '在家',
+          type: '新',
+          readingStatus: '未讀'
+        });
+
+        const locationFilters = [
+          { label: '全部', val: 'all' },
+          { label: '在家', val: '在家' },
+          { label: '在租屋處', val: '在租屋處' },
+          { label: '售出', val: '售出' }
+        ];
+
+        const readFilters = [
+          { label: '全部進度', val: 'all' },
+          { label: '閱讀完畢', val: '閱讀完畢' },
+          { label: '閱讀中', val: '閱讀中' },
+          { label: '待讀', val: '未讀' }
+        ];
+
+        onMounted(() => {
+          const saved = localStorage.getItem('nordic_reading_books');
+          if (saved) {
+            try {
+              books.value = JSON.parse(saved);
+              books.value.forEach(b => {
+                if (!b.readingStatus) {
+                  b.readingStatus = b.read ? '閱讀完畢' : '未讀';
+                }
+              });
+            } catch (e) {
+              books.value = INITIAL_BOOKS;
+            }
+          } else {
+            books.value = INITIAL_BOOKS;
+          }
+        });
+
+        watch(books, (val) => {
+          localStorage.setItem('nordic_reading_books', JSON.stringify(val));
+        }, { deep: true });
+
+        const formatIndex = (num) => {
+          return num < 10 ? `0${num}` : `${num}`;
+        };
+
+        const addBook = () => {
+          if (!newBook.value.title) return;
+          
+          books.value.push({
+            id: Date.now(),
+            title: newBook.value.title,
+            author: newBook.value.author,
+            publisher: newBook.value.publisher,
+            source: newBook.value.source,
+            location: newBook.value.location,
+            type: newBook.value.type,
+            readingStatus: newBook.value.readingStatus || '未讀',
+            createdAt: new Date().toISOString().slice(0, 10)
+          });
+
+          newBook.value = {
+            title: '',
+            author: '',
+            publisher: '',
+            source: '',
+            location: '在家',
+            type: '新',
+            readingStatus: '未讀'
+          };
+        };
+
+        const deleteBook = (id) => {
+          if (confirm('確定要從書架上移除這本書嗎？')) {
+            books.value = books.value.filter(b => b.id !== id);
+          }
+        };
+
+        const getLocationBadgeStyle = (loc) => {
+          if (loc === '在租屋處') return 'bg-[#ECE7DE] text-[#6B5A46]';
+          if (loc === '在家') return 'bg-[#EBF1EA] text-[#486345]';
+          if (loc === '售出') return 'bg-gray-100 text-gray-400';
+          return 'bg-sand-100 text-nordic-slate';
+        };
+
+        const getReadingStatusStyle = (status) => {
+          if (status === '閱讀完畢') return 'bg-[#E5ECE3] text-[#3D5638] font-semibold';
+          if (status === '閱讀中') return 'bg-[#F2EADB] text-[#8C6228] font-semibold';
+          return 'bg-sand-100 text-nordic-muted';
+        };
+
+        const filteredBooks = computed(() => {
+          return books.value.filter(b => {
+            const matchLoc = filterLocation.value === 'all' || b.location === filterLocation.value;
+            const matchRead = filterRead.value === 'all' || b.readingStatus === filterRead.value;
+
+            const q = searchQuery.value.toLowerCase().trim();
+            const matchQuery = !q || 
+              b.title.toLowerCase().includes(q) || 
+              (b.author && b.author.toLowerCase().includes(q)) ||
+              (b.publisher && b.publisher.toLowerCase().includes(q)) ||
+              (b.source && b.source.toLowerCase().includes(q));
+
+            return matchLoc && matchRead && matchQuery;
+          });
+        });
+
+        const stats = computed(() => ({
+          finished: books.value.filter(b => b.readingStatus === '閱讀完畢').length,
+          reading: books.value.filter(b => b.readingStatus === '閱讀中').length,
+          unread: books.value.filter(b => b.readingStatus === '未讀').length,
+          home: books.value.filter(b => b.location === '在家').length,
+          rental: books.value.filter(b => b.location === '在租屋處').length,
+          sold: books.value.filter(b => b.location === '售出').length
+        }));
+
+        // 實時統計分析（即時反應任何更改）
+        const analytics = computed(() => {
+          const total = books.value.length || 1;
+          const finished = stats.value.finished;
+          const reading = stats.value.reading;
+          const newBooks = books.value.filter(b => b.type === '新').length;
+          const usedBooks = books.value.filter(b => b.type === '二手').length;
+
+          // 作者統計 Top 5
+          const authorMap = {};
+          books.value.forEach(b => {
+            if (b.author) authorMap[b.author] = (authorMap[b.author] || 0) + 1;
+          });
+          const topAuthors = Object.entries(authorMap)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          // 出版商統計 Top 5
+          const pubMap = {};
+          books.value.forEach(b => {
+            if (b.publisher) pubMap[b.publisher] = (pubMap[b.publisher] || 0) + 1;
+          });
+          const topPublishers = Object.entries(pubMap)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          // 出處統計 Top 5
+          const srcMap = {};
+          books.value.forEach(b => {
+            if (b.source) srcMap[b.source] = (srcMap[b.source] || 0) + 1;
+          });
+          const topSources = Object.entries(srcMap)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          return {
+            readRate: Math.round((finished / total) * 100),
+            readingRate: Math.round((reading / total) * 100),
+            newCount: newBooks,
+            usedCount: usedBooks,
+            newPercent: Math.round((newBooks / total) * 100),
+            usedPercent: Math.round((usedBooks / total) * 100),
+            topAuthors,
+            topPublishers,
+            topSources
+          };
+        });
+
+        const exportData = () => {
+          const blob = new Blob([JSON.stringify(books.value, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `nordic-bookshelf-${new Date().toISOString().slice(0, 10)}.json`;
+          a.click();
+        };
+
+        const importData = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              books.value = JSON.parse(event.target.result);
+              alert('匯入成功！已同步書單。');
+            } catch (err) {
+              alert('JSON 格式錯誤，請確認檔案內容');
+            }
+          };
+          reader.readAsText(file);
+        };
+
+        const resetToDefault = () => {
+          if (confirm('這將會重置回原本 Excel 的 88 本書初始資料，確定嗎？')) {
+            books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+          }
+        };
+
+        return {
+          books, newBook, filterLocation, filterRead, searchQuery,
+          showDashboard, sourceOptions, locationFilters, readFilters,
+          filteredBooks, stats, analytics,
+          formatIndex, addBook, deleteBook, getLocationBadgeStyle, getReadingStatusStyle,
+          exportData, importData, resetToDefault
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
