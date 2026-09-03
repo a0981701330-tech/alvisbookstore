@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>長衫客書坊 · 讀書人的事，能算偷麼？</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,200 +41,163 @@
       -webkit-font-smoothing: antialiased;
     }
     .font-serif-title { font-family: 'Noto Serif TC', serif; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-thumb { background: #D9D3C7; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #BCB4A4; }
   </style>
 </head>
-<body class="min-h-screen py-8 md:py-12 px-4 md:px-8">
+<body class="min-h-screen py-6 md:py-12 px-3 sm:px-6 md:px-8">
   <div id="app" class="max-w-5xl mx-auto">
     
     <!-- 頁首與統計 -->
-    <header class="flex flex-col md:flex-row md:items-end justify-between pb-6 mb-6 border-b border-nordic-border gap-6">
+    <header class="flex flex-col md:flex-row md:items-end justify-between pb-5 mb-5 md:pb-6 md:mb-6 border-b border-nordic-border gap-4 md:gap-6">
       <div>
-        <div class="flex items-center gap-2 mb-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-nordic-sage inline-block"></span>
-          <span class="text-xs tracking-widest uppercase font-semibold text-nordic-muted">Personal Bookshelf</span>
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-2 h-2 rounded-full bg-nordic-sage inline-block"></span>
+          <span class="text-[10px] sm:text-xs tracking-widest uppercase font-semibold text-nordic-muted">Personal Bookshelf</span>
         </div>
-        <h1 class="text-3xl md:text-4xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
-        <p class="text-xs md:text-sm font-serif-title text-nordic-muted mt-1.5 tracking-wide">讀書人的事，能算偷麼？</p>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
+        <p class="text-xs sm:text-sm font-serif-title text-nordic-muted mt-1 tracking-wide">讀書人的事，能算偷麼？</p>
       </div>
 
-      <div class="grid grid-cols-4 gap-2.5">
+      <!-- 統計卡片：手機 2x2，電腦橫排 4 格 -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
         <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
-          <div class="text-[11px] text-nordic-muted">總藏書</div>
-          <div class="text-base md:text-lg font-bold text-nordic-dark">{{ books.length }}</div>
+          <div class="text-[10px] sm:text-[11px] text-nordic-muted">總藏書</div>
+          <div class="text-base sm:text-lg font-bold text-nordic-dark">{{ books.length }}</div>
         </div>
         <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
-          <div class="text-[11px] text-nordic-sage font-medium">閱讀完畢</div>
-          <div class="text-base md:text-lg font-bold text-nordic-sage">{{ stats.finished }}</div>
+          <div class="text-[10px] sm:text-[11px] text-nordic-sage font-medium">閱讀完畢</div>
+          <div class="text-base sm:text-lg font-bold text-nordic-sage">{{ stats.finished }}</div>
         </div>
         <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
-          <div class="text-[11px] text-[#A37844] font-medium">閱讀中</div>
-          <div class="text-base md:text-lg font-bold text-[#A37844]">{{ stats.reading }}</div>
+          <div class="text-[10px] sm:text-[11px] text-[#A37844] font-medium">閱讀中</div>
+          <div class="text-base sm:text-lg font-bold text-[#A37844]">{{ stats.reading }}</div>
         </div>
         <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
-          <div class="text-[11px] text-[#556951] font-medium">在家</div>
-          <div class="text-base md:text-lg font-bold text-[#556951]">{{ stats.home }}</div>
+          <div class="text-[10px] sm:text-[11px] text-[#556951] font-medium">在家</div>
+          <div class="text-base sm:text-lg font-bold text-[#556951]">{{ stats.home }}</div>
         </div>
       </div>
     </header>
 
     <!-- 工具列：數據分析開關、備份與重置 -->
-    <div class="flex justify-between items-center mb-6 gap-2">
-      <!-- 儀表板切換按鈕 -->
+    <div class="flex flex-wrap justify-between items-center mb-5 gap-2">
       <button @click="showDashboard = !showDashboard" 
               :class="showDashboard ? 'bg-nordic-dark text-white' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
-              class="text-xs font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5">
-        <span>{{ showDashboard ? '✕ 收合數據分析' : '📊 即時數據分析 (Excel指標)' }}</span>
+              class="text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5">
+        <span>{{ showDashboard ? '✕ 收合統計' : '📊 藏書數據分析' }}</span>
       </button>
 
-      <div class="flex gap-2">
-        <button @click="exportData" class="text-xs font-medium bg-white hover:bg-sand-100 border border-nordic-border px-3 py-1.5 rounded-lg shadow-sm transition">
-          ↓ 匯出備份 (JSON)
+      <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
+        <button @click="exportData" class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition">
+          ↓ 備份
         </button>
-        <label class="text-xs font-medium bg-white hover:bg-sand-100 border border-nordic-border px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
-          ↑ 匯入備份
+        <label class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
+          ↑ 匯入
           <input type="file" @change="importData" class="hidden" accept=".json" />
         </label>
-        <button @click="resetToDefault" class="text-xs text-gray-400 hover:text-red-600 px-2 py-1.5 transition">
-          重置原檔
+        <button @click="resetToDefault" class="text-gray-400 hover:text-red-600 px-1.5 py-1.5 transition text-[11px]">
+          重置
         </button>
       </div>
     </div>
 
-    <!-- 即時數據分析儀表板 (展開區塊) -->
-    <section v-if="showDashboard" class="bg-white rounded-2xl p-6 border border-nordic-border shadow-sm mb-8 space-y-6 transition-all duration-300">
-      <div class="flex justify-between items-center border-b border-sand-100 pb-3">
+    <!-- 即時數據分析儀表板 -->
+    <section v-if="showDashboard" class="bg-white rounded-2xl p-4 sm:p-6 border border-nordic-border shadow-sm mb-6 space-y-5 transition-all">
+      <div class="flex justify-between items-center border-b border-sand-100 pb-2.5">
         <h2 class="text-xs font-bold text-nordic-slate uppercase tracking-wider flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-nordic-sage"></span>
-          即時數據統計分析 (隨任何改動實時聯動)
+          藏書數據即時分析
         </h2>
-        <span class="text-[11px] text-nordic-muted">更新頻率: 0秒延遲</span>
+        <span class="text-[10px] text-nordic-muted">即時連動</span>
       </div>
 
-      <!-- 第一排：完成度進度條 + 新舊比 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- 完成度 -->
-        <div class="bg-sand-50/70 p-4 rounded-xl border border-nordic-border/60">
-          <div class="flex justify-between items-center mb-2">
+      <!-- 第一排：完成度與新舊比 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
+          <div class="flex justify-between items-center mb-1.5">
             <span class="text-xs font-semibold text-nordic-slate">📖 閱讀完成度</span>
             <span class="text-xs font-bold text-nordic-sage">{{ analytics.readRate }}%</span>
           </div>
-          <!-- 雙色進度條 -->
-          <div class="w-full bg-sand-200 h-2.5 rounded-full overflow-hidden flex">
-            <div :style="{ width: analytics.readRate + '%' }" class="bg-nordic-sage transition-all duration-500" title="閱讀完畢"></div>
-            <div :style="{ width: analytics.readingRate + '%' }" class="bg-[#D9A75E] transition-all duration-500" title="閱讀中"></div>
+          <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
+            <div :style="{ width: analytics.readRate + '%' }" class="bg-nordic-sage transition-all duration-500"></div>
+            <div :style="{ width: analytics.readingRate + '%' }" class="bg-[#D9A75E] transition-all duration-500"></div>
           </div>
-          <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
-            <span>完畢: {{ stats.finished }} 本</span>
-            <span>閱讀中: {{ stats.reading }} 本</span>
-            <span>待讀: {{ stats.unread }} 本</span>
+          <div class="flex justify-between text-[10px] sm:text-[11px] text-nordic-muted mt-2">
+            <span>完畢: {{ stats.finished }}</span>
+            <span>閱讀中: {{ stats.reading }}</span>
+            <span>待讀: {{ stats.unread }}</span>
           </div>
         </div>
 
-        <!-- 新舊比 -->
-        <div class="bg-sand-50/70 p-4 rounded-xl border border-nordic-border/60">
-          <div class="flex justify-between items-center mb-2">
+        <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
+          <div class="flex justify-between items-center mb-1.5">
             <span class="text-xs font-semibold text-nordic-slate">🏷️ 新書 / 二手書比率</span>
             <span class="text-xs text-nordic-muted">二手 {{ analytics.usedPercent }}%</span>
           </div>
-          <div class="w-full bg-sand-200 h-2.5 rounded-full overflow-hidden flex">
-            <div :style="{ width: analytics.newPercent + '%' }" class="bg-nordic-dark transition-all duration-500" title="新書"></div>
-            <div :style="{ width: analytics.usedPercent + '%' }" class="bg-nordic-warmtaupe transition-all duration-500" title="二手書"></div>
+          <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
+            <div :style="{ width: analytics.newPercent + '%' }" class="bg-nordic-dark transition-all duration-500"></div>
+            <div :style="{ width: analytics.usedPercent + '%' }" class="bg-nordic-warmtaupe transition-all duration-500"></div>
           </div>
-          <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
-            <span>新書: {{ analytics.newCount }} 本 ({{ analytics.newPercent }}%)</span>
-            <span>二手: {{ analytics.usedCount }} 本 ({{ analytics.usedPercent }}%)</span>
+          <div class="flex justify-between text-[10px] sm:text-[11px] text-nordic-muted mt-2">
+            <span>新書: {{ analytics.newCount }} ({{ analytics.newPercent }}%)</span>
+            <span>二手: {{ analytics.usedCount }} ({{ analytics.usedPercent }}%)</span>
           </div>
         </div>
       </div>
 
-      <!-- 第二排：作者、出版社、出處 Top 5 榜單 -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-        <!-- 作者比率 Top 5 -->
-        <div class="space-y-2.5">
-          <h3 class="text-xs font-semibold text-nordic-slate flex items-center justify-between">
-            <span>✍️ 熱門作者 (Top 5)</span>
-            <span class="text-[10px] text-nordic-muted">冊數</span>
-          </h3>
-          <div class="space-y-1.5">
-            <div v-for="a in analytics.topAuthors" :key="a.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
-              <span class="truncate max-w-[130px] text-nordic-dark font-medium">{{ a.name }}</span>
-              <div class="flex items-center gap-2">
-                <div class="w-16 bg-sand-200 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-nordic-slate h-full" :style="{ width: (a.count / books.length * 100 * 3) + '%' }"></div>
-                </div>
-                <span class="font-mono text-[11px] text-nordic-muted w-4 text-right">{{ a.count }}</span>
-              </div>
-            </div>
+      <!-- 第二排：Top 5 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+        <div class="space-y-1.5">
+          <h3 class="text-xs font-semibold text-nordic-slate">✍️ 熱門作者 (Top 5)</h3>
+          <div v-for="a in analytics.topAuthors" :key="a.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
+            <span class="truncate max-w-[140px] text-nordic-dark">{{ a.name }}</span>
+            <span class="font-mono text-[11px] text-nordic-muted">{{ a.count }} 冊</span>
           </div>
         </div>
 
-        <!-- 出版商比率 Top 5 -->
-        <div class="space-y-2.5">
-          <h3 class="text-xs font-semibold text-nordic-slate flex items-center justify-between">
-            <span>🏛️ 主要出版社 (Top 5)</span>
-            <span class="text-[10px] text-nordic-muted">冊數</span>
-          </h3>
-          <div class="space-y-1.5">
-            <div v-for="p in analytics.topPublishers" :key="p.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
-              <span class="truncate max-w-[130px] text-nordic-dark font-medium">{{ p.name }}</span>
-              <div class="flex items-center gap-2">
-                <div class="w-16 bg-sand-200 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-nordic-warmtaupe h-full" :style="{ width: (p.count / books.length * 100 * 3) + '%' }"></div>
-                </div>
-                <span class="font-mono text-[11px] text-nordic-muted w-4 text-right">{{ p.count }}</span>
-              </div>
-            </div>
+        <div class="space-y-1.5">
+          <h3 class="text-xs font-semibold text-nordic-slate">🏛️ 主要出版社 (Top 5)</h3>
+          <div v-for="p in analytics.topPublishers" :key="p.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
+            <span class="truncate max-w-[140px] text-nordic-dark">{{ p.name }}</span>
+            <span class="font-mono text-[11px] text-nordic-muted">{{ p.count }} 冊</span>
           </div>
         </div>
 
-        <!-- 出處分佈 Top 5 -->
-        <div class="space-y-2.5">
-          <h3 class="text-xs font-semibold text-nordic-slate flex items-center justify-between">
-            <span>🛒 購書出處 (Top 5)</span>
-            <span class="text-[10px] text-nordic-muted">冊數</span>
-          </h3>
-          <div class="space-y-1.5">
-            <div v-for="s in analytics.topSources" :key="s.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
-              <span class="truncate max-w-[130px] text-nordic-dark font-medium">{{ s.name }}</span>
-              <div class="flex items-center gap-2">
-                <div class="w-16 bg-sand-200 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-nordic-sage h-full" :style="{ width: (s.count / books.length * 100 * 3) + '%' }"></div>
-                </div>
-                <span class="font-mono text-[11px] text-nordic-muted w-4 text-right">{{ s.count }}</span>
-              </div>
-            </div>
+        <div class="space-y-1.5">
+          <h3 class="text-xs font-semibold text-nordic-slate">🛒 購書出處 (Top 5)</h3>
+          <div v-for="s in analytics.topSources" :key="s.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
+            <span class="truncate max-w-[140px] text-nordic-dark">{{ s.name }}</span>
+            <span class="font-mono text-[11px] text-nordic-muted">{{ s.count }} 冊</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 篩選與搜尋列 -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+    <!-- 篩選與搜尋列（手機橫向滾動友善） -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
       <div class="flex flex-wrap items-center gap-1.5 text-xs">
-        <span class="text-nordic-muted mr-1">狀態:</span>
+        <span class="text-nordic-muted text-[11px]">位置:</span>
         <button v-for="loc in locationFilters" :key="loc.val" 
                 @click="filterLocation = loc.val"
-                :class="filterLocation === loc.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
-                class="px-3 py-1.5 rounded-lg transition">
+                :class="filterLocation === loc.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border'"
+                class="px-2.5 py-1 rounded-lg transition text-xs">
           {{ loc.label }}
         </button>
 
-        <span class="text-nordic-muted ml-3 mr-1">閱讀:</span>
+        <span class="text-nordic-muted text-[11px] ml-2">進度:</span>
         <button v-for="rf in readFilters" :key="rf.val"
                 @click="filterRead = rf.val"
-                :class="filterRead === rf.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
-                class="px-3 py-1.5 rounded-lg transition">
+                :class="filterRead === rf.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border'"
+                class="px-2.5 py-1 rounded-lg transition text-xs">
           {{ rf.label }}
         </button>
       </div>
 
       <div class="relative w-full md:w-64">
-        <input v-model="searchQuery" placeholder="搜尋書名、作者、出版商、出處..."
-               class="w-full bg-white border border-nordic-border rounded-xl pl-8 pr-3 py-2 text-xs md:text-sm text-nordic-dark placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-nordic-slate transition shadow-sm" />
-        <span class="absolute left-2.5 top-2.5 text-gray-400 text-xs">🔍</span>
+        <input v-model="searchQuery" placeholder="搜尋書名、作者、出版社..."
+               class="w-full bg-white border border-nordic-border rounded-xl pl-8 pr-3 py-1.5 sm:py-2 text-xs md:text-sm text-nordic-dark placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-nordic-slate transition shadow-sm" />
+        <span class="absolute left-2.5 top-2 sm:top-2.5 text-gray-400 text-xs">🔍</span>
       </div>
     </div>
 
@@ -244,119 +207,117 @@
         無符合條件的書籍
       </div>
 
-      <!-- 已有書籍列表 -->
+      <!-- 單一書籍卡片：RWD 完美相容手機與電腦 -->
       <div v-for="(b, idx) in filteredBooks" :key="b.id" 
-           class="p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-sand-50/60 transition">
+           class="p-3.5 sm:p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-sand-50/60 transition relative">
         
-        <!-- 左側：序號 + 書名、作者、出版社（無橫線） -->
-        <div class="flex items-start gap-3 min-w-0 flex-1">
-          <span class="mt-0.5 text-xs font-mono font-medium text-nordic-muted/80 bg-sand-100 px-1.5 py-0.5 rounded flex-shrink-0">
+        <!-- 書籍主要資訊 -->
+        <div class="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 pr-6 md:pr-0">
+          <span class="mt-0.5 text-[11px] font-mono font-medium text-nordic-muted/80 bg-sand-100 px-1.5 py-0.5 rounded flex-shrink-0">
             {{ formatIndex(idx + 1) }}
           </span>
 
           <div class="min-w-0 flex-1">
-            <h3 class="font-serif-title font-semibold text-base md:text-lg text-nordic-dark tracking-tight">
+            <h3 class="font-serif-title font-semibold text-base sm:text-lg text-nordic-dark tracking-tight leading-snug">
               {{ b.title }}
             </h3>
 
-            <p class="text-xs md:text-sm text-nordic-muted mt-1 flex flex-wrap items-center gap-2">
+            <p class="text-xs text-nordic-muted mt-1 flex flex-wrap items-center gap-1.5">
               <span v-if="b.author" class="text-nordic-slate font-medium">{{ b.author }}</span>
               <span v-if="b.author && b.publisher" class="text-gray-300">•</span>
               <span v-if="b.publisher">{{ b.publisher }}</span>
             </p>
           </div>
+
+          <!-- 手機端右上角刪除按鈕 -->
+          <button @click="deleteBook(b.id)" class="md:hidden absolute top-3.5 right-3.5 text-gray-300 hover:text-red-500 p-1 text-sm transition" title="刪除">
+            ✕
+          </button>
         </div>
 
-        <!-- 右側：閱讀進度選單 + 新/二手選單 + 購入地點選單 + 狀態選單 + 刪除 -->
-        <div class="flex items-center justify-between md:justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100 flex-wrap">
+        <!-- 4 個下拉選單：手機端採 2x2 排版，電腦端橫向排開 -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100/80">
           
-          <!-- 閱讀進度下拉選單（即時同步儀表板） -->
+          <!-- 1. 閱讀進度 -->
           <select v-model="b.readingStatus" 
                   :class="getReadingStatusStyle(b.readingStatus)"
-                  class="text-xs font-medium rounded-lg px-2.5 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+                  class="w-full md:w-auto text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
             <option value="未讀">待讀</option>
             <option value="閱讀中">📖 閱讀中</option>
-            <option value="閱讀完畢">✓ 閱讀完畢</option>
+            <option value="閱讀完畢">✓ 完畢</option>
           </select>
 
-          <!-- 新/二手下拉選單（即時同步儀表板） -->
+          <!-- 2. 書況 (新/二手) -->
           <select v-model="b.type" 
                   :class="b.type === '二手' ? 'bg-[#EAE4D9] text-[#635748]' : 'bg-sand-100 text-nordic-slate'"
-                  class="text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+                  class="w-full md:w-auto text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
             <option value="新">新書</option>
             <option value="二手">二手</option>
           </select>
 
-          <!-- 購入地點下拉選單（即時同步儀表板） -->
+          <!-- 3. 出處 -->
           <select v-model="b.source" 
-                  class="text-xs text-nordic-slate bg-sand-100 hover:bg-sand-200/80 rounded-lg px-2.5 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+                  class="w-full md:w-auto text-xs text-nordic-slate bg-sand-100 truncate rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer max-w-[150px]">
             <option value="">🛒 未填出處</option>
             <option v-for="src in sourceOptions" :key="src" :value="src">{{ src }}</option>
           </select>
 
-          <!-- 狀態下拉選單（在家 / 在租屋處 / 售出） -->
+          <!-- 4. 位置 -->
           <select v-model="b.location" 
                   :class="getLocationBadgeStyle(b.location)"
-                  class="text-xs font-medium rounded-lg px-2.5 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
+                  class="w-full md:w-auto text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
             <option value="在家">📍 在家</option>
-            <option value="在租屋處">🏢 在租屋處</option>
+            <option value="在租屋處">🏢 租屋處</option>
             <option value="售出">🏷️ 售出</option>
           </select>
 
-          <!-- 刪除書籍 -->
-          <button @click="deleteBook(b.id)" class="text-gray-300 hover:text-red-500 text-xs p-1.5 transition" title="刪除書籍">
+          <!-- 電腦端刪除按鈕 -->
+          <button @click="deleteBook(b.id)" class="hidden md:block text-gray-300 hover:text-red-500 text-xs p-1.5 transition ml-1" title="刪除">
             ✕
           </button>
         </div>
       </div>
 
-      <!-- 底部新增欄位 (Inline Quick Add Row) -->
-      <div class="p-4 md:p-5 bg-sand-50/70 hover:bg-sand-50 transition border-t-2 border-dashed border-nordic-border/70">
-        <form @submit.prevent="addBook" class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <!-- 底部新增欄位 (手機端優化為流暢輸入卡片) -->
+      <div class="p-3.5 sm:p-5 bg-sand-50/70 transition border-t-2 border-dashed border-nordic-border/70">
+        <form @submit.prevent="addBook" class="space-y-2.5 md:space-y-0 md:flex md:items-center md:justify-between md:gap-3">
           
-          <div class="flex items-center gap-3 flex-1">
-            <span class="text-nordic-muted text-base pl-1">+</span>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
-              <input v-model.trim="newBook.title" placeholder="書名 *" required
-                     class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
-              
-              <input v-model.trim="newBook.author" placeholder="作者"
-                     class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
-              
-              <input v-model.trim="newBook.publisher" placeholder="出版社"
-                     class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
-            </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
+            <input v-model.trim="newBook.title" placeholder="書名 *" required
+                   class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
+            
+            <input v-model.trim="newBook.author" placeholder="作者"
+                   class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
+            
+            <input v-model.trim="newBook.publisher" placeholder="出版社"
+                   class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
           </div>
 
-          <div class="flex items-center justify-end gap-2 flex-wrap">
-            <!-- 閱讀進度選單 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 md:flex items-center gap-2">
             <select v-model="newBook.readingStatus" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
               <option value="未讀">待讀</option>
               <option value="閱讀中">📖 閱讀中</option>
-              <option value="閱讀完畢">✓ 閱讀完畢</option>
+              <option value="閱讀完畢">✓ 完畢</option>
             </select>
 
-            <!-- 新舊書 -->
             <select v-model="newBook.type" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
               <option value="新">新書</option>
               <option value="二手">二手</option>
             </select>
 
-            <!-- 購入出處選單 -->
-            <select v-model="newBook.source" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
-              <option value="">出處 (可選)</option>
+            <select v-model="newBook.source" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer truncate">
+              <option value="">出處(可選)</option>
               <option v-for="src in sourceOptions" :key="src" :value="src">{{ src }}</option>
             </select>
 
-            <!-- 狀態選單 -->
-            <select v-model="newBook.location" class="bg-white border border-nordic-border rounded-lg px-2.5 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+            <select v-model="newBook.location" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
               <option value="在家">📍 在家</option>
-              <option value="在租屋處">🏢 在租屋處</option>
+              <option value="在租屋處">🏢 租屋處</option>
               <option value="售出">🏷️ 售出</option>
             </select>
 
-            <button type="submit" class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-3 py-1.5 rounded-lg shadow-sm font-medium transition">
-              新增書籍
+            <button type="submit" class="col-span-2 sm:col-span-4 md:col-auto bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-4 py-2 md:py-1.5 rounded-lg shadow-sm font-medium transition">
+              + 新增書籍
             </button>
           </div>
 
@@ -366,7 +327,7 @@
     </div>
 
     <!-- 頁尾署名 -->
-    <footer class="mt-12 text-center text-xs tracking-widest text-nordic-muted/80 font-medium pb-8 uppercase">
+    <footer class="mt-8 md:mt-12 text-center text-xs tracking-widest text-nordic-muted/80 font-medium pb-8 uppercase">
       MUBONE STUDIO
     </footer>
 
@@ -472,7 +433,7 @@
         const filterLocation = ref('all');
         const filterRead = ref('all');
         const searchQuery = ref('');
-        const showDashboard = ref(true); // 預設展開數據面板
+        const showDashboard = ref(true);
 
         const sourceOptions = [
           '台中墊腳石', '台南墊腳石', '台中茉莉二手書店', '台南珍寶書坊',
@@ -494,13 +455,13 @@
         const locationFilters = [
           { label: '全部', val: 'all' },
           { label: '在家', val: '在家' },
-          { label: '在租屋處', val: '在租屋處' },
+          { label: '租屋處', val: '在租屋處' },
           { label: '售出', val: '售出' }
         ];
 
         const readFilters = [
-          { label: '全部進度', val: 'all' },
-          { label: '閱讀完畢', val: '閱讀完畢' },
+          { label: '全部', val: 'all' },
+          { label: '完畢', val: '閱讀完畢' },
           { label: '閱讀中', val: '閱讀中' },
           { label: '待讀', val: '未讀' }
         ];
@@ -601,7 +562,6 @@
           sold: books.value.filter(b => b.location === '售出').length
         }));
 
-        // 實時統計分析（即時反應任何更改）
         const analytics = computed(() => {
           const total = books.value.length || 1;
           const finished = stats.value.finished;
@@ -609,7 +569,6 @@
           const newBooks = books.value.filter(b => b.type === '新').length;
           const usedBooks = books.value.filter(b => b.type === '二手').length;
 
-          // 作者統計 Top 5
           const authorMap = {};
           books.value.forEach(b => {
             if (b.author) authorMap[b.author] = (authorMap[b.author] || 0) + 1;
@@ -619,7 +578,6 @@
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
 
-          // 出版商統計 Top 5
           const pubMap = {};
           books.value.forEach(b => {
             if (b.publisher) pubMap[b.publisher] = (pubMap[b.publisher] || 0) + 1;
@@ -629,7 +587,6 @@
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
 
-          // 出處統計 Top 5
           const srcMap = {};
           books.value.forEach(b => {
             if (b.source) srcMap[b.source] = (srcMap[b.source] || 0) + 1;
@@ -657,7 +614,7 @@
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `nordic-bookshelf-${new Date().toISOString().slice(0, 10)}.json`;
+          a.download = `mubone-books-${new Date().toISOString().slice(0, 10)}.json`;
           a.click();
         };
 
