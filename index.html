@@ -86,7 +86,7 @@
       </div>
     </header>
 
-    <!-- 工具列 -->
+    <!-- 工具列（包含儲存按鈕） -->
     <div class="flex flex-wrap justify-between items-center mb-5 gap-2">
       <button @click="showDashboard = !showDashboard" 
               :class="showDashboard ? 'bg-nordic-dark text-white' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
@@ -94,7 +94,17 @@
         <span>{{ showDashboard ? '✕ 收合統計' : '📊 藏書數據分析' }}</span>
       </button>
 
-      <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+        <!-- 核心實體儲存按鈕 -->
+        <button @click="saveToCloud" 
+                :disabled="isSaving"
+                :class="hasUnsavedChanges ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold ring-2 ring-amber-300 animate-pulse' : 'bg-nordic-dark hover:bg-nordic-slate text-white'"
+                class="px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 disabled:opacity-50">
+          <span v-if="isSaving">⏳ 儲存中...</span>
+          <span v-else-if="hasUnsavedChanges">💾 儲存變更 (未同步)</span>
+          <span v-else>💾 儲存至雲端</span>
+        </button>
+
         <button @click="fetchFromCloud" class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1">
           <span>🔄</span> 重新整理
         </button>
@@ -328,7 +338,7 @@
 
   <script>
     const CLOUD_API_URL = 'https://script.google.com/macros/s/AKfycbxWxgRnH4Fcglu0XHQG0dSTxHstLHRKAnk8zuWMLM0FlKSGlsEMevv0jaIeG2aVZEvlrw/exec';
-    const LOCAL_KEY = 'mubone_bookshelf_v5';
+    const LOCAL_KEY = 'mubone_bookshelf_v6';
 
     const INITIAL_BOOKS = [
       {"id": 1, "title": "小王子", "author": "聖修伯里", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢"},
@@ -442,8 +452,9 @@
         const searchQuery = ref('');
         const showDashboard = ref(true);
 
+        const isSaving = ref(false);
+        const hasUnsavedChanges = ref(false);
         const syncState = ref('synced');
-        let syncTimeout = null;
 
         const sourceOptions = [
           '台中墊腳石', '台南墊腳石', '台中茉莉二手書店', '台南珍寶書坊',
@@ -477,25 +488,28 @@
         ];
 
         const syncStatusText = computed(() => {
+          if (isSaving.value) return '雲端儲存中...';
+          if (hasUnsavedChanges.value) return '有未儲存的變更';
           if (syncState.value === 'connecting') return '雲端連線中...';
-          if (syncState.value === 'saving') return '雲端儲存中...';
           if (syncState.value === 'synced') return '雲端同步完成';
           return '本機離線模式';
         });
 
         const syncStatusClass = computed(() => {
+          if (isSaving.value) return 'bg-blue-400 animate-pulse';
+          if (hasUnsavedChanges.value) return 'bg-amber-400 animate-bounce';
           if (syncState.value === 'connecting') return 'bg-yellow-400 animate-pulse';
-          if (syncState.value === 'saving') return 'bg-blue-400 animate-pulse';
           if (syncState.value === 'synced') return 'bg-nordic-sage';
           return 'bg-red-400';
         });
 
+        // 從雲端載入資料
         const fetchFromCloud = async () => {
           syncState.value = 'connecting';
           try {
             const res = await fetch(CLOUD_API_URL);
             const data = await res.json();
-            if (Array.isArray(data) && data.length > 5) {
+            if (Array.isArray(data) && data.length >= 10) {
               books.value = data.map((b, idx) => ({
                 id: b.id || (idx + 1),
                 title: b.title || b['書名'] || '',
@@ -507,43 +521,48 @@
                 readingStatus: b.readingStatus || (b['是否看完'] === '是' ? '閱讀完畢' : '未讀')
               }));
               localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
+              hasUnsavedChanges.value = false;
               syncState.value = 'synced';
-            } else {
-              // 雲端資料少於正常藏書時，自動將 88 本完整推上試算表
-              books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
-              pushToCloud();
             }
           } catch (e) {
+            console.warn('雲端讀取異常，維持本機快取');
             syncState.value = 'offline';
           }
         };
 
-        const pushToCloud = () => {
-          syncState.value = 'saving';
+        // 手動儲存至雲端核心函式
+        const saveToCloud = async () => {
+          if (books.value.length < 10) {
+            alert('書籍數量過少，為保護資料庫安全禁止送出。');
+            return;
+          }
+
+          isSaving.value = true;
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
 
-          if (syncTimeout) clearTimeout(syncTimeout);
-          syncTimeout = setTimeout(async () => {
-            try {
-              // 使用 URLSearchParams 以標準 Form Payload 避免跨網域封包丟失
-              await fetch(CLOUD_API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(books.value)
-              });
-              syncState.value = 'synced';
-            } catch (err) {
-              syncState.value = 'offline';
-            }
-          }, 400);
+          try {
+            await fetch(CLOUD_API_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(books.value)
+            });
+            isSaving.value = false;
+            hasUnsavedChanges.value = false;
+            syncState.value = 'synced';
+            alert('✓ 雲端儲存成功！資料已同步至 Google 試算表。');
+          } catch (err) {
+            isSaving.value = false;
+            alert('⚠️ 儲存失敗，請檢查網路連線後再試一次。');
+          }
         };
 
         const updateBookField = (id, field, value) => {
           const target = books.value.find(b => b.id === id);
           if (target) {
             target[field] = value;
-            pushToCloud();
+            hasUnsavedChanges.value = true;
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
           }
         };
 
@@ -566,7 +585,8 @@
             readingStatus: newBook.value.readingStatus || '未讀'
           });
 
-          pushToCloud();
+          hasUnsavedChanges.value = true;
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
 
           newBook.value = {
             title: '',
@@ -582,7 +602,8 @@
         const deleteBook = (id) => {
           if (confirm('確定要從書架上移除這本書嗎？')) {
             books.value = books.value.filter(b => b.id !== id);
-            pushToCloud();
+            hasUnsavedChanges.value = true;
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
           }
         };
 
@@ -687,8 +708,9 @@
           reader.onload = (event) => {
             try {
               books.value = JSON.parse(event.target.result);
-              pushToCloud();
-              alert('匯入成功！已同步至 Google 試算表雲端。');
+              hasUnsavedChanges.value = true;
+              localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
+              alert('匯入成功！請點擊「💾 儲存變更」將資料推送到雲端。');
             } catch (err) {
               alert('JSON 格式錯誤，請確認檔案內容');
             }
@@ -697,9 +719,10 @@
         };
 
         const resetToDefault = () => {
-          if (confirm('確定重置回初始 88 本資料並同步至雲端嗎？')) {
+          if (confirm('確定重置回初始 88 本資料嗎？（完成後請點擊儲存變更）')) {
             books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
-            pushToCloud();
+            hasUnsavedChanges.value = true;
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
           }
         };
 
@@ -707,6 +730,7 @@
           books, newBook, filterLocation, filterRead, searchQuery,
           showDashboard, sourceOptions, locationFilters, readFilters,
           filteredBooks, stats, analytics, syncState, syncStatusText, syncStatusClass,
+          isSaving, hasUnsavedChanges, saveToCloud,
           formatIndex, addBook, deleteBook, updateBookField, getLocationBadgeStyle, getReadingStatusStyle,
           fetchFromCloud, exportData, importData, resetToDefault
         };
