@@ -6,7 +6,7 @@
   <title>長衫客書坊 · 讀書人的事，能算偷麼？</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
@@ -49,7 +49,7 @@
   <div id="app" class="max-w-5xl mx-auto">
     
     <!-- 頁首與統計 -->
-    <header class="flex flex-col md:flex-row md:items-end justify-between pb-5 mb-5 md:pb-6 md:mb-6 border-b border-nordic-border gap-4 md:gap-6">
+    <header class="flex flex-col lg:flex-row lg:items-end justify-between pb-5 mb-5 md:pb-6 md:mb-6 border-b border-nordic-border gap-4 lg:gap-6">
       <div>
         <div class="flex items-center gap-2 mb-1.5">
           <span class="w-2 h-2 rounded-full" :class="syncStatusClass"></span>
@@ -61,23 +61,27 @@
         <p class="text-xs sm:text-sm font-serif-title text-nordic-muted mt-1 tracking-wide">讀書人的事，能算偷麼？</p>
       </div>
 
-      <!-- 統計卡片 -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+      <!-- 統計卡片：5 格統計卡片（總藏書、閱讀完畢、閱讀中、在家、租屋處） -->
+      <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5">
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
           <div class="text-[10px] sm:text-[11px] text-nordic-muted">總藏書</div>
           <div class="text-base sm:text-lg font-bold text-nordic-dark">{{ books.length }}</div>
         </div>
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
           <div class="text-[10px] sm:text-[11px] text-nordic-sage font-medium">閱讀完畢</div>
           <div class="text-base sm:text-lg font-bold text-nordic-sage">{{ stats.finished }}</div>
         </div>
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
           <div class="text-[10px] sm:text-[11px] text-[#A37844] font-medium">閱讀中</div>
           <div class="text-base sm:text-lg font-bold text-[#A37844]">{{ stats.reading }}</div>
         </div>
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-3 py-2 text-center shadow-sm">
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
           <div class="text-[10px] sm:text-[11px] text-[#556951] font-medium">在家</div>
           <div class="text-base sm:text-lg font-bold text-[#556951]">{{ stats.home }}</div>
+        </div>
+        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm col-span-2 sm:col-span-1">
+          <div class="text-[10px] sm:text-[11px] text-[#8C6D4A] font-medium">租屋處</div>
+          <div class="text-base sm:text-lg font-bold text-[#8C6D4A]">{{ stats.rental }}</div>
         </div>
       </div>
     </header>
@@ -341,7 +345,6 @@
   </div>
 
   <script>
-    // 你的專屬 Google Apps Script 雲端 API
     const CLOUD_API_URL = 'https://script.google.com/macros/s/AKfycbxWxgRnH4Fcglu0XHQG0dSTxHstLHRKAnk8zuWMLM0FlKSGlsEMevv0jaIeG2aVZEvlrw/exec';
     const LOCAL_KEY = 'mubone_bookshelf_v3';
 
@@ -446,7 +449,7 @@
         const searchQuery = ref('');
         const showDashboard = ref(true);
 
-        const syncState = ref('connecting'); // 'connecting', 'synced', 'saving', 'offline'
+        const syncState = ref('connecting');
         let syncTimeout = null;
 
         const sourceOptions = [
@@ -494,7 +497,6 @@
           return 'bg-red-400';
         });
 
-        // 雲端資料抓取
         const fetchFromCloud = async () => {
           syncState.value = 'connecting';
           try {
@@ -514,7 +516,6 @@
               localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
               syncState.value = 'synced';
             } else {
-              // 試算表為空時，進行初始化全量上傳
               books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
               syncState.value = 'synced';
               pushToCloud();
@@ -527,7 +528,6 @@
           }
         };
 
-        // 雲端資料同步寫入（防抖 0.5s）
         const pushToCloud = () => {
           syncState.value = 'saving';
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
@@ -549,7 +549,6 @@
           }, 500);
         };
 
-        // 即時直寫函數
         const updateBookField = (id, field, value) => {
           const target = books.value.find(b => b.id === id);
           if (target) {
