@@ -6,7 +6,7 @@
   <title>長衫客書坊 · 讀書人的事，能算偷麼？</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
@@ -52,8 +52,10 @@
     <header class="flex flex-col md:flex-row md:items-end justify-between pb-5 mb-5 md:pb-6 md:mb-6 border-b border-nordic-border gap-4 md:gap-6">
       <div>
         <div class="flex items-center gap-2 mb-1.5">
-          <span class="w-2 h-2 rounded-full bg-nordic-sage inline-block"></span>
-          <span class="text-[10px] sm:text-xs tracking-widest uppercase font-semibold text-nordic-muted">Personal Bookshelf</span>
+          <span class="w-2 h-2 rounded-full" :class="syncStatusClass"></span>
+          <span class="text-[10px] sm:text-xs tracking-widest uppercase font-semibold text-nordic-muted">
+            Personal Bookshelf · {{ syncStatusText }}
+          </span>
         </div>
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
         <p class="text-xs sm:text-sm font-serif-title text-nordic-muted mt-1 tracking-wide">讀書人的事，能算偷麼？</p>
@@ -89,6 +91,9 @@
       </button>
 
       <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
+        <button @click="fetchFromCloud" class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1">
+          <span>🔄</span> 重新整理
+        </button>
         <button @click="exportData" class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition">
           ↓ 備份
         </button>
@@ -205,7 +210,7 @@
         無符合條件的書籍
       </div>
 
-      <!-- 單一書籍卡片：所有選單改用直寫函數同步 -->
+      <!-- 單一書籍卡片 -->
       <div v-for="(b, idx) in filteredBooks" :key="b.id" 
            class="p-3.5 sm:p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-sand-50/60 transition relative">
         
@@ -233,10 +238,10 @@
           </button>
         </div>
 
-        <!-- 4 個下拉選單：直連源頭資料庫進行持久化寫入 -->
+        <!-- 4 個下拉選單 -->
         <div class="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100/80">
           
-          <!-- 1. 閱讀進度選單 -->
+          <!-- 閱讀進度選單 -->
           <select :value="b.readingStatus" 
                   @change="updateBookField(b.id, 'readingStatus', $event.target.value)"
                   :class="getReadingStatusStyle(b.readingStatus)"
@@ -246,7 +251,7 @@
             <option value="閱讀完畢">✓ 完畢</option>
           </select>
 
-          <!-- 2. 書況 (新/二手) -->
+          <!-- 書況 -->
           <select :value="b.type" 
                   @change="updateBookField(b.id, 'type', $event.target.value)"
                   :class="b.type === '二手' ? 'bg-[#EAE4D9] text-[#635748]' : 'bg-sand-100 text-nordic-slate'"
@@ -255,7 +260,7 @@
             <option value="二手">二手</option>
           </select>
 
-          <!-- 3. 出處 -->
+          <!-- 出處 -->
           <select :value="b.source" 
                   @change="updateBookField(b.id, 'source', $event.target.value)"
                   class="w-full md:w-auto text-xs text-nordic-slate bg-sand-100 truncate rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer max-w-[150px]">
@@ -263,7 +268,7 @@
             <option v-for="src in sourceOptions" :key="src" :value="src">{{ src }}</option>
           </select>
 
-          <!-- 4. 位置 (在家 / 在租屋處 / 售出) -->
+          <!-- 位置 -->
           <select :value="b.location" 
                   @change="updateBookField(b.id, 'location', $event.target.value)"
                   :class="getLocationBadgeStyle(b.location)"
@@ -336,100 +341,102 @@
   </div>
 
   <script>
+    // 你的專屬 Google Apps Script 雲端 API
+    const CLOUD_API_URL = 'https://script.google.com/macros/s/AKfycbxWxgRnH4Fcglu0XHQG0dSTxHstLHRKAnk8zuWMLM0FlKSGlsEMevv0jaIeG2aVZEvlrw/exec';
+    const LOCAL_KEY = 'mubone_bookshelf_v3';
+
     const INITIAL_BOOKS = [
-      {"id": 1, "title": "小王子", "author": "聖修伯里", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 2, "title": "安妮的日記", "author": "安妮法蘭克", "publisher": "志文出版社", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 3, "title": "正義者", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 4, "title": "瘟疫", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 5, "title": "反抗者", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 6, "title": "變形記", "author": "卡夫卡", "publisher": "菓子文化", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 7, "title": "人間失格", "author": "太宰治", "publisher": "亞洲圖書", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 8, "title": "金閣寺", "author": "三島由紀夫", "publisher": "野人", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 9, "title": "羅生門", "author": "芥川龍之介", "publisher": "好讀", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 10, "title": "蒼蠅王", "author": "威廉高汀", "publisher": "高寶書版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 11, "title": "傻子伊凡", "author": "列夫托爾斯泰", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 12, "title": "1984", "author": "喬治歐維爾", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 13, "title": "動物農莊", "author": "喬治歐維爾", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 14, "title": "異鄉人", "author": "卡繆", "publisher": "麥田出版", "type": "新", "location": "在家", "source": "讀冊(線上)", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 15, "title": "薛西弗斯的神話", "author": "卡繆", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 16, "title": "辛德勒的名單", "author": "湯瑪斯肯納利", "publisher": "時報文化", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 17, "title": "解憂雜貨店", "author": "東野圭吾", "publisher": "皇冠", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 18, "title": "香水", "author": "徐四金", "publisher": "皇冠", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 19, "title": "美國狙擊手", "author": "克里斯凱爾", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 20, "title": "臺灣漫遊錄", "author": "楊双子", "publisher": "春山出版", "type": "二手", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 21, "title": "偷書賊", "author": "馬格斯朱薩克", "publisher": "木馬文化", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 22, "title": "少年P的奇幻漂流", "author": "楊馬泰爾", "publisher": "皇冠", "type": "二手", "location": "在家", "source": "雲林建忠書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 23, "title": "隔離島", "author": "丹尼斯勒翰", "publisher": "臉譜", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 24, "title": "魔戒前傳:哈比人歷險記", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 25, "title": "魔戒首部曲:魔戒現身", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 26, "title": "魔戒二部曲:雙城奇謀", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 27, "title": "魔戒三部曲:王者再臨", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 28, "title": "暗夜天使", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 29, "title": "沉淪 [暗夜天使二]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 30, "title": "暗湧 [暗夜天使三]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 31, "title": "終曲 [暗夜天使四]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 32, "title": "莫斯科紳士", "author": "亞莫爾托歐斯", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 33, "title": "成為怪物的孩子們", "author": "李玉秀/姜美/鄭明燮/朱元圭/千誌允", "publisher": "時報文化", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 34, "title": "鬼地方", "author": "陳思宏", "publisher": "鏡文學", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 35, "title": "極限返航", "author": "安迪威爾", "publisher": "三采文化", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 36, "title": "地獄修業旅行", "author": "匡靈秀", "publisher": "臉譜", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 37, "title": "玻璃之顏", "author": "法蘭西絲哈汀吉", "publisher": "青林出版社", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 38, "title": "老派攝影", "author": "王啟文", "publisher": "有鹿", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 39, "title": "儒林外史", "author": "吳敬梓", "publisher": "世一", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 40, "title": "Me Before You", "author": "Jojo Moyes", "publisher": "Penguin books", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 41, "title": "滾滾長江東流水", "author": "various artists", "publisher": "人人出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 42, "title": "麥迪遜之橋", "author": "羅伯J華勒", "publisher": "時報文化", "type": "二手", "location": "在家", "source": "舅舅贈送", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 43, "title": "海邊的房間", "author": "黃麗群", "publisher": "時報文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 44, "title": "去你的正常世界", "author": "大坦誠", "publisher": "如何", "type": "二手", "location": "在家", "source": "Mick贈送", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 45, "title": "神的經濟學", "author": "宇山卓榮", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 46, "title": "臺灣之子", "author": "陳水扁", "publisher": "晨星出版", "type": "新", "location": "在家", "source": "台南墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 47, "title": "SPARE", "author": "Prince Harry", "publisher": "Random Hosue", "type": "新", "location": "在家", "source": "博客來(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 48, "title": "The Hunger Games", "author": "Suzanne Collins", "publisher": "Scholastic Press", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 49, "title": "Twilight", "author": "Stephenie Meyer", "publisher": "Little Brown", "type": "二手", "location": "在家", "source": "學弟贈送", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 50, "title": "The Lightning Thief", "author": "Rick Riordan", "publisher": "Penguin books", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 51, "title": "我吃了那男孩一整年的早餐", "author": "尾巴", "publisher": "尖端出版", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 52, "title": "奧德賽", "author": "荷馬", "publisher": "聯經", "type": "新", "location": "在家", "source": "麗寶金石堂", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 53, "title": "嘔吐", "author": "沙特", "publisher": "麥田出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 54, "title": "小偵探愛彌兒", "author": "耶里希.凱斯特納", "publisher": "小麥田", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 55, "title": "讀古人的閒適,治今人的焦慮", "author": "琹涵", "publisher": "九歌", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 56, "title": "電影院的哲學家", "author": "郝廣才", "publisher": "格林文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 57, "title": "看電影 喇D賽:閱讀電影 體悟人生", "author": "魏尚世", "publisher": "魏尚世", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 58, "title": "有關電影的100個經典故事", "author": "楊明華", "publisher": "驛站", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 59, "title": "失控的焦慮世代", "author": "強納森·海德特", "publisher": "網路與書", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 60, "title": "二手書店店員日記", "author": "尚恩 貝西爾", "publisher": "聯經", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 61, "title": "別再當「背多分」!:東大教授親授, 深化思考的最強自學法", "author": "柳川範之", "publisher": "楓書坊", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 62, "title": "一本搞定K書、考試、時間管理的學習聖經", "author": "朗恩. 費瑞", "publisher": "商周出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 63, "title": "像科學家一樣思考:明辨是非、避免偏誤, 新世代必備的核心素養", "author": "史坦利.萊斯", "publisher": "商周出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 64, "title": "記憶書店", "author": "宋侑庭", "publisher": "春天出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 65, "title": "時光庇護所", "author": "吉奧基. 戈斯波丁諾夫", "publisher": "寂寞", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 66, "title": "你好，我是書店員:今天想找哪本書？59則和買書有關的讀者故事，還有職人的工作日常與推書清單", "author": "森田惠 ", "publisher": "幸福文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 67, "title": "希臘羅馬神話:永恆的諸神、英雄、愛情與冒險故事", "author": "伊迪絲·漢彌敦", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 68, "title": "思辨的力量:從法國高中哲學教育, 培養獨立思考能力", "author": "坂本尚志", "publisher": "楓樹林", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 69, "title": "看一次就懂徹底學會英文句型 ", "author": "王琳詔", "publisher": "希伯崙", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 70, "title": "人間失格", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 71, "title": "百年孤寂", "author": "加布列.賈西亞.馬奎斯", "publisher": "皇冠", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 72, "title": "我們", "author": "尤金.薩米爾欽", "publisher": "遍路文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 73, "title": "美麗新世界", "author": "阿道斯.赫胥黎", "publisher": "遍路文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 74, "title": "王陽明哲學", "author": "蔡仁厚", "publisher": "三民書局", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 75, "title": "江南案拼圖：改變中華民國國運的關鍵", "author": "李天鐸", "publisher": "時報", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 76, "title": "馬克思與馬克思主義", "author": "格雷戈里.克雷斯", "publisher": "麥田", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 77, "title": "自己的看法讀古文談寫作", "author": "凌性傑", "publisher": "麥田", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 78, "title": "銀翼殺手", "author": "菲利普 狄克", "publisher": "寂寞出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 79, "title": "半憂鬱: 給能工作, 能生活, 內心卻動彈不得的你", "author": "平光源", "publisher": "如何出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 80, "title": "想我苦哈哈的一生", "author": "詹姆斯瑟伯", "publisher": "逗點文創社", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 81, "title": "華氏451度 圖像小說", "author": " 雷．布萊伯利, 提姆．漢彌爾頓", "publisher": "麥田", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 82, "title": "那本書是", "author": " 又吉直樹, 吉竹伸介", "publisher": "皇冠", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 83, "title": "四維街一號", "author": "楊双子", "publisher": "春山出版", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 84, "title": "告白", "author": "湊佳苗", "publisher": "時報出版", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 85, "title": "好電影的法則: 101堂電影大師受用一生的UCLA電影課", "author": "Neil Landau", "publisher": "原點出版", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "閱讀完畢", "createdAt": "2026-09-03"},
-      {"id": 86, "title": "任何事都會不順利的完成", "author": "盧建彰", "publisher": "有鹿文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 87, "title": "地獄變", "author": "芥川龍之介", "publisher": "大牌文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"},
-      {"id": 88, "title": "斜陽", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀", "createdAt": "2026-09-03"}
+      {"id": 1, "title": "小王子", "author": "聖修伯里", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢"},
+      {"id": 2, "title": "安妮的日記", "author": "安妮法蘭克", "publisher": "志文出版社", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀"},
+      {"id": 3, "title": "正義者", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "閱讀完畢"},
+      {"id": 4, "title": "瘟疫", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀"},
+      {"id": 5, "title": "反抗者", "author": "卡繆", "publisher": "大塊文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀"},
+      {"id": 6, "title": "變形記", "author": "卡夫卡", "publisher": "菓子文化", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀"},
+      {"id": 7, "title": "人間失格", "author": "太宰治", "publisher": "亞洲圖書", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "閱讀完畢"},
+      {"id": 8, "title": "金閣寺", "author": "三島由紀夫", "publisher": "野人", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢"},
+      {"id": 9, "title": "羅生門", "author": "芥川龍之介", "publisher": "好讀", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "未讀"},
+      {"id": 10, "title": "蒼蠅王", "author": "威廉高汀", "publisher": "高寶書版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢"},
+      {"id": 11, "title": "傻子伊凡", "author": "列夫托爾斯泰", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢"},
+      {"id": 12, "title": "1984", "author": "喬治歐維爾", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢"},
+      {"id": 13, "title": "動物農莊", "author": "喬治歐維爾", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢"},
+      {"id": 14, "title": "異鄉人", "author": "卡繆", "publisher": "麥田出版", "type": "新", "location": "在家", "source": "讀冊(線上)", "readingStatus": "閱讀完畢"},
+      {"id": 15, "title": "薛西弗斯的神話", "author": "卡繆", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "閱讀完畢"},
+      {"id": 16, "title": "辛德勒的名單", "author": "湯瑪斯肯納利", "publisher": "時報文化", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 17, "title": "解憂雜貨店", "author": "東野圭吾", "publisher": "皇冠", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "閱讀完畢"},
+      {"id": 18, "title": "香水", "author": "徐四金", "publisher": "皇冠", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢"},
+      {"id": 19, "title": "美國狙擊手", "author": "克里斯凱爾", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀"},
+      {"id": 20, "title": "臺灣漫遊錄", "author": "楊双子", "publisher": "春山出版", "type": "二手", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀"},
+      {"id": 21, "title": "偷書賊", "author": "馬格斯朱薩克", "publisher": "木馬文化", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢"},
+      {"id": 22, "title": "少年P的奇幻漂流", "author": "楊馬泰爾", "publisher": "皇冠", "type": "二手", "location": "在家", "source": "雲林建忠書店", "readingStatus": "未讀"},
+      {"id": 23, "title": "隔離島", "author": "丹尼斯勒翰", "publisher": "臉譜", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 24, "title": "魔戒前傳:哈比人歷險記", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "閱讀完畢"},
+      {"id": 25, "title": "魔戒首部曲:魔戒現身", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀"},
+      {"id": 26, "title": "魔戒二部曲:雙城奇謀", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀"},
+      {"id": 27, "title": "魔戒三部曲:王者再臨", "author": "托爾金", "publisher": "聯經", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀"},
+      {"id": 28, "title": "暗夜天使", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 29, "title": "沉淪 [暗夜天使二]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 30, "title": "暗湧 [暗夜天使三]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 31, "title": "終曲 [暗夜天使四]", "author": "貝卡費茲派翠克", "publisher": "高寶書版", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 32, "title": "莫斯科紳士", "author": "亞莫爾托歐斯", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀"},
+      {"id": 33, "title": "成為怪物的孩子們", "author": "李玉秀/姜美/鄭明燮/朱元圭/千誌允", "publisher": "時報文化", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "未讀"},
+      {"id": 34, "title": "鬼地方", "author": "陳思宏", "publisher": "鏡文學", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 35, "title": "極限返航", "author": "安迪威爾", "publisher": "三采文化", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢"},
+      {"id": 36, "title": "地獄修業旅行", "author": "匡靈秀", "publisher": "臉譜", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "未讀"},
+      {"id": 37, "title": "玻璃之顏", "author": "法蘭西絲哈汀吉", "publisher": "青林出版社", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 38, "title": "老派攝影", "author": "王啟文", "publisher": "有鹿", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢"},
+      {"id": 39, "title": "儒林外史", "author": "吳敬梓", "publisher": "世一", "type": "新", "location": "在家", "source": "蝦皮", "readingStatus": "未讀"},
+      {"id": 40, "title": "Me Before You", "author": "Jojo Moyes", "publisher": "Penguin books", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀"},
+      {"id": 41, "title": "滾滾長江東流水", "author": "various artists", "publisher": "人人出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀"},
+      {"id": 42, "title": "麥迪遜之橋", "author": "羅伯J華勒", "publisher": "時報文化", "type": "二手", "location": "在家", "source": "舅舅贈送", "readingStatus": "閱讀完畢"},
+      {"id": 43, "title": "海邊的房間", "author": "黃麗群", "publisher": "時報文化", "type": "二手", "location": "在家", "source": "讀冊(線上)", "readingStatus": "未讀"},
+      {"id": 44, "title": "去你的正常世界", "author": "大坦誠", "publisher": "如何", "type": "二手", "location": "在家", "source": "Mick贈送", "readingStatus": "未讀"},
+      {"id": 45, "title": "神的經濟學", "author": "宇山卓榮", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀"},
+      {"id": 46, "title": "臺灣之子", "author": "陳水扁", "publisher": "晨星出版", "type": "新", "location": "在家", "source": "台南墊腳石", "readingStatus": "未讀"},
+      {"id": 47, "title": "SPARE", "author": "Prince Harry", "publisher": "Random Hosue", "type": "新", "location": "在家", "source": "博客來(線上)", "readingStatus": "未讀"},
+      {"id": 48, "title": "The Hunger Games", "author": "Suzanne Collins", "publisher": "Scholastic Press", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀"},
+      {"id": 49, "title": "Twilight", "author": "Stephenie Meyer", "publisher": "Little Brown", "type": "二手", "location": "在家", "source": "學弟贈送", "readingStatus": "未讀"},
+      {"id": 50, "title": "The Lightning Thief", "author": "Rick Riordan", "publisher": "Penguin books", "type": "二手", "location": "在家", "source": "書寶(線上)", "readingStatus": "未讀"},
+      {"id": 51, "title": "我吃了那男孩一整年的早餐", "author": "尾巴", "publisher": "尖端出版", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "閱讀完畢"},
+      {"id": 52, "title": "奧德賽", "author": "荷馬", "publisher": "聯經", "type": "新", "location": "在家", "source": "麗寶金石堂", "readingStatus": "閱讀完畢"},
+      {"id": 53, "title": "嘔吐", "author": "沙特", "publisher": "麥田出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 54, "title": "小偵探愛彌兒", "author": "耶里希.凱斯特納", "publisher": "小麥田", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 55, "title": "讀古人的閒適,治今人的焦慮", "author": "琹涵", "publisher": "九歌", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 56, "title": "電影院的哲學家", "author": "郝廣才", "publisher": "格林文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 57, "title": "看電影 喇D賽:閱讀電影 體悟人生", "author": "魏尚世", "publisher": "魏尚世", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 58, "title": "有關電影的100個經典故事", "author": "楊明華", "publisher": "驛站", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 59, "title": "失控的焦慮世代", "author": "強納森·海德特", "publisher": "網路與書", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 60, "title": "二手書店店員日記", "author": "尚恩 貝西爾", "publisher": "聯經", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 61, "title": "別再當「背多分」!:東大教授親授, 深化思考的最強自學法", "author": "柳川範之", "publisher": "楓書坊", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 62, "title": "一本搞定K書、考試、時間管理的學習聖經", "author": "朗恩. 費瑞", "publisher": "商周出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 63, "title": "像科學家一樣思考:明辨是非、避免偏誤, 新世代必備的核心素養", "author": "史坦利.萊斯", "publisher": "商周出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 64, "title": "記憶書店", "author": "宋侑庭", "publisher": "春天出版", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 65, "title": "時光庇護所", "author": "吉奧基. 戈斯波丁諾夫", "publisher": "寂寞", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 66, "title": "你好，我是書店員:今天想找哪本書？59則和買書有關的讀者故事，還有職人的工作日常與推書清單", "author": "森田惠 ", "publisher": "幸福文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 67, "title": "希臘羅馬神話:永恆的諸神、英雄、愛情與冒險故事", "author": "伊迪絲·漢彌敦", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 68, "title": "思辨的力量:從法國高中哲學教育, 培養獨立思考能力", "author": "坂本尚志", "publisher": "楓樹林", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 69, "title": "看一次就懂徹底學會英文句型 ", "author": "王琳詔", "publisher": "希伯崙", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 70, "title": "人間失格", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 71, "title": "百年孤寂", "author": "加布列.賈西亞.馬奎斯", "publisher": "皇冠", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "未讀"},
+      {"id": 72, "title": "我們", "author": "尤金.薩米爾欽", "publisher": "遍路文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 73, "title": "美麗新世界", "author": "阿道斯.赫胥黎", "publisher": "遍路文化", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 74, "title": "王陽明哲學", "author": "蔡仁厚", "publisher": "三民書局", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 75, "title": "江南案拼圖：改變中華民國國運的關鍵", "author": "李天鐸", "publisher": "時報", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 76, "title": "馬克思與馬克思主義", "author": "格雷戈里.克雷斯", "publisher": "麥田", "type": "新", "location": "在家", "source": "電子書", "readingStatus": "閱讀完畢"},
+      {"id": 77, "title": "自己的看法讀古文談寫作", "author": "凌性傑", "publisher": "麥田", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀"},
+      {"id": 78, "title": "銀翼殺手", "author": "菲利普 狄克", "publisher": "寂寞出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀"},
+      {"id": 79, "title": "半憂鬱: 給能工作, 能生活, 內心卻動彈不得的你", "author": "平光源", "publisher": "如何出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢"},
+      {"id": 80, "title": "想我苦哈哈的一生", "author": "詹姆斯瑟伯", "publisher": "逗點文創社", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢"},
+      {"id": 81, "title": "華氏451度 圖像小說", "author": " 雷．布萊伯利, 提姆．漢彌爾頓", "publisher": "麥田", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "閱讀完畢"},
+      {"id": 82, "title": "那本書是", "author": " 又吉直樹, 吉竹伸介", "publisher": "皇冠", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "閱讀完畢"},
+      {"id": 83, "title": "四維街一號", "author": "楊双子", "publisher": "春山出版", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "未讀"},
+      {"id": 84, "title": "告白", "author": "湊佳苗", "publisher": "時報出版", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "未讀"},
+      {"id": 85, "title": "好電影的法則: 101堂電影大師受用一生的UCLA電影課", "author": "Neil Landau", "publisher": "原點出版", "type": "二手", "location": "在家", "source": "台中茉莉二手書店", "readingStatus": "閱讀完畢"},
+      {"id": 86, "title": "任何事都會不順利的完成", "author": "盧建彰", "publisher": "有鹿文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀"},
+      {"id": 87, "title": "地獄變", "author": "芥川龍之介", "publisher": "大牌文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀"},
+      {"id": 88, "title": "斜陽", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀"}
     ];
 
-    const STORAGE_KEY = 'mubone_bookshelf_v3'; // 全新升級快取 Key
-
-    const { createApp, ref, computed, onMounted, watch } = Vue;
+    const { createApp, ref, computed, onMounted } = Vue;
 
     createApp({
       setup() {
@@ -438,6 +445,9 @@
         const filterRead = ref('all');
         const searchQuery = ref('');
         const showDashboard = ref(true);
+
+        const syncState = ref('connecting'); // 'connecting', 'synced', 'saving', 'offline'
+        let syncTimeout = null;
 
         const sourceOptions = [
           '台中墊腳石', '台南墊腳石', '台中茉莉二手書店', '台南珍寶書坊',
@@ -470,54 +480,92 @@
           { label: '待讀', val: '未讀' }
         ];
 
-        // 強制直接寫入 localStorage
-        const saveToStorage = () => {
+        const syncStatusText = computed(() => {
+          if (syncState.value === 'connecting') return '雲端連線中...';
+          if (syncState.value === 'saving') return '雲端儲存中...';
+          if (syncState.value === 'synced') return '雲端同步完成';
+          return '本機離線模式';
+        });
+
+        const syncStatusClass = computed(() => {
+          if (syncState.value === 'connecting') return 'bg-yellow-400 animate-pulse';
+          if (syncState.value === 'saving') return 'bg-blue-400 animate-pulse';
+          if (syncState.value === 'synced') return 'bg-nordic-sage';
+          return 'bg-red-400';
+        });
+
+        // 雲端資料抓取
+        const fetchFromCloud = async () => {
+          syncState.value = 'connecting';
           try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(books.value));
+            const res = await fetch(CLOUD_API_URL);
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              books.value = data.map((b, idx) => ({
+                id: b.id || (idx + 1),
+                title: b.title || b['書名'] || '',
+                author: b.author || b['作者'] || '',
+                publisher: b.publisher || b['出版商'] || '',
+                type: b.type || b['新/二手'] || '新',
+                location: b.location || b['狀態'] || '在家',
+                source: b.source || b['出處'] || '',
+                readingStatus: b.readingStatus || (b['是否看完'] === '是' ? '閱讀完畢' : '未讀')
+              }));
+              localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
+              syncState.value = 'synced';
+            } else {
+              // 試算表為空時，進行初始化全量上傳
+              books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+              syncState.value = 'synced';
+              pushToCloud();
+            }
           } catch (e) {
-            console.error('寫入快取失敗:', e);
+            console.warn('無法連線至雲端，使用本機快取:', e);
+            const saved = localStorage.getItem(LOCAL_KEY);
+            books.value = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_BOOKS));
+            syncState.value = 'offline';
           }
         };
 
-        // 核心直寫函數：解決 computed 副本造成更新遺失的問題
+        // 雲端資料同步寫入（防抖 0.5s）
+        const pushToCloud = () => {
+          syncState.value = 'saving';
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
+
+          if (syncTimeout) clearTimeout(syncTimeout);
+          syncTimeout = setTimeout(async () => {
+            try {
+              await fetch(CLOUD_API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(books.value)
+              });
+              syncState.value = 'synced';
+            } catch (err) {
+              console.error('寫入雲端失敗:', err);
+              syncState.value = 'offline';
+            }
+          }, 500);
+        };
+
+        // 即時直寫函數
         const updateBookField = (id, field, value) => {
           const target = books.value.find(b => b.id === id);
           if (target) {
             target[field] = value;
-            saveToStorage(); // 立即實時寫入硬碟快取
+            pushToCloud();
           }
         };
 
         onMounted(() => {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              books.value = parsed.map(b => ({
-                ...b,
-                readingStatus: b.readingStatus || (b.read ? '閱讀完畢' : '未讀')
-              }));
-            } catch (e) {
-              books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
-            }
-          } else {
-            // 初次載入，立刻寫入 v3 快取
-            books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
-            saveToStorage();
-          }
+          fetchFromCloud();
         });
 
-        watch(books, () => {
-          saveToStorage();
-        }, { deep: true });
-
-        const formatIndex = (num) => {
-          return num < 10 ? `0${num}` : `${num}`;
-        };
+        const formatIndex = (num) => num < 10 ? `0${num}` : `${num}`;
 
         const addBook = () => {
           if (!newBook.value.title) return;
-          
           books.value.push({
             id: Date.now(),
             title: newBook.value.title,
@@ -526,11 +574,10 @@
             source: newBook.value.source,
             location: newBook.value.location,
             type: newBook.value.type,
-            readingStatus: newBook.value.readingStatus || '未讀',
-            createdAt: new Date().toISOString().slice(0, 10)
+            readingStatus: newBook.value.readingStatus || '未讀'
           });
 
-          saveToStorage();
+          pushToCloud();
 
           newBook.value = {
             title: '',
@@ -546,7 +593,7 @@
         const deleteBook = (id) => {
           if (confirm('確定要從書架上移除這本書嗎？')) {
             books.value = books.value.filter(b => b.id !== id);
-            saveToStorage();
+            pushToCloud();
           }
         };
 
@@ -650,13 +697,9 @@
           const reader = new FileReader();
           reader.onload = (event) => {
             try {
-              const imported = JSON.parse(event.target.result);
-              books.value = imported.map(b => ({
-                ...b,
-                readingStatus: b.readingStatus || (b.read ? '閱讀完畢' : '未讀')
-              }));
-              saveToStorage();
-              alert('匯入成功！已同步書單。');
+              books.value = JSON.parse(event.target.result);
+              pushToCloud();
+              alert('匯入成功！已同步至 Google 試算表雲端。');
             } catch (err) {
               alert('JSON 格式錯誤，請確認檔案內容');
             }
@@ -665,18 +708,18 @@
         };
 
         const resetToDefault = () => {
-          if (confirm('這將會重置回原本 Excel 的 88 本書初始資料，確定嗎？')) {
+          if (confirm('確定重置回初始 88 本資料並同步至雲端嗎？')) {
             books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
-            saveToStorage();
+            pushToCloud();
           }
         };
 
         return {
           books, newBook, filterLocation, filterRead, searchQuery,
           showDashboard, sourceOptions, locationFilters, readFilters,
-          filteredBooks, stats, analytics,
+          filteredBooks, stats, analytics, syncState, syncStatusText, syncStatusClass,
           formatIndex, addBook, deleteBook, updateBookField, getLocationBadgeStyle, getReadingStatusStyle,
-          exportData, importData, resetToDefault
+          fetchFromCloud, exportData, importData, resetToDefault
         };
       }
     }).mount('#app');
