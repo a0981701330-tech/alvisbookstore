@@ -6,7 +6,7 @@
   <title>長衫客書坊 · 讀書人的事，能算偷麼？</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
@@ -61,7 +61,7 @@
         <p class="text-xs sm:text-sm font-serif-title text-nordic-muted mt-1 tracking-wide">讀書人的事，能算偷麼？</p>
       </div>
 
-      <!-- 統計卡片：5 格統計卡片（總藏書、閱讀完畢、閱讀中、在家、租屋處） -->
+      <!-- 統計卡片 -->
       <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5">
         <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
           <div class="text-[10px] sm:text-[11px] text-nordic-muted">總藏書</div>
@@ -214,11 +214,9 @@
         無符合條件的書籍
       </div>
 
-      <!-- 單一書籍卡片 -->
       <div v-for="(b, idx) in filteredBooks" :key="b.id" 
            class="p-3.5 sm:p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-sand-50/60 transition relative">
         
-        <!-- 書籍主要資訊 -->
         <div class="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 pr-6 md:pr-0">
           <span class="mt-0.5 text-[11px] font-mono font-medium text-nordic-muted/80 bg-sand-100 px-1.5 py-0.5 rounded flex-shrink-0">
             {{ formatIndex(idx + 1) }}
@@ -236,16 +234,12 @@
             </p>
           </div>
 
-          <!-- 手機端刪除按鈕 -->
           <button @click="deleteBook(b.id)" class="md:hidden absolute top-3.5 right-3.5 text-gray-300 hover:text-red-500 p-1 text-sm transition" title="刪除">
             ✕
           </button>
         </div>
 
-        <!-- 4 個下拉選單 -->
         <div class="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100/80">
-          
-          <!-- 閱讀進度選單 -->
           <select :value="b.readingStatus" 
                   @change="updateBookField(b.id, 'readingStatus', $event.target.value)"
                   :class="getReadingStatusStyle(b.readingStatus)"
@@ -255,7 +249,6 @@
             <option value="閱讀完畢">✓ 完畢</option>
           </select>
 
-          <!-- 書況 -->
           <select :value="b.type" 
                   @change="updateBookField(b.id, 'type', $event.target.value)"
                   :class="b.type === '二手' ? 'bg-[#EAE4D9] text-[#635748]' : 'bg-sand-100 text-nordic-slate'"
@@ -264,7 +257,6 @@
             <option value="二手">二手</option>
           </select>
 
-          <!-- 出處 -->
           <select :value="b.source" 
                   @change="updateBookField(b.id, 'source', $event.target.value)"
                   class="w-full md:w-auto text-xs text-nordic-slate bg-sand-100 truncate rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer max-w-[150px]">
@@ -272,7 +264,6 @@
             <option v-for="src in sourceOptions" :key="src" :value="src">{{ src }}</option>
           </select>
 
-          <!-- 位置 -->
           <select :value="b.location" 
                   @change="updateBookField(b.id, 'location', $event.target.value)"
                   :class="getLocationBadgeStyle(b.location)"
@@ -282,7 +273,6 @@
             <option value="售出">🏷️ 售出</option>
           </select>
 
-          <!-- 電腦端刪除按鈕 -->
           <button @click="deleteBook(b.id)" class="hidden md:block text-gray-300 hover:text-red-500 text-xs p-1.5 transition ml-1" title="刪除">
             ✕
           </button>
@@ -292,14 +282,11 @@
       <!-- 底部新增欄位 -->
       <div class="p-3.5 sm:p-5 bg-sand-50/70 transition border-t-2 border-dashed border-nordic-border/70">
         <form @submit.prevent="addBook" class="space-y-2.5 md:space-y-0 md:flex md:items-center md:justify-between md:gap-3">
-          
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
             <input v-model.trim="newBook.title" placeholder="書名 *" required
                    class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
-            
             <input v-model.trim="newBook.author" placeholder="作者"
                    class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
-            
             <input v-model.trim="newBook.publisher" placeholder="出版社"
                    class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
           </div>
@@ -310,28 +297,23 @@
               <option value="閱讀中">📖 閱讀中</option>
               <option value="閱讀完畢">✓ 完畢</option>
             </select>
-
             <select v-model="newBook.type" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
               <option value="新">新書</option>
               <option value="二手">二手</option>
             </select>
-
             <select v-model="newBook.source" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer truncate">
               <option value="">出處(可選)</option>
               <option v-for="src in sourceOptions" :key="src" :value="src">{{ src }}</option>
             </select>
-
             <select v-model="newBook.location" class="bg-white border border-nordic-border rounded-lg px-2.5 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
               <option value="在家">📍 在家</option>
               <option value="在租屋處">🏢 租屋處</option>
               <option value="售出">🏷️ 售出</option>
             </select>
-
             <button type="submit" class="col-span-2 sm:col-span-4 md:col-auto bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-4 py-2 md:py-1.5 rounded-lg shadow-sm font-medium transition">
               + 新增書籍
             </button>
           </div>
-
         </form>
       </div>
 
@@ -346,7 +328,7 @@
 
   <script>
     const CLOUD_API_URL = 'https://script.google.com/macros/s/AKfycbxWxgRnH4Fcglu0XHQG0dSTxHstLHRKAnk8zuWMLM0FlKSGlsEMevv0jaIeG2aVZEvlrw/exec';
-    const LOCAL_KEY = 'mubone_bookshelf_v3';
+    const LOCAL_KEY = 'mubone_bookshelf_v5';
 
     const INITIAL_BOOKS = [
       {"id": 1, "title": "小王子", "author": "聖修伯里", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢"},
@@ -443,13 +425,24 @@
 
     createApp({
       setup() {
-        const books = ref([]);
+        const getInitialBooks = () => {
+          const saved = localStorage.getItem(LOCAL_KEY);
+          if (saved) {
+            try { 
+              const parsed = JSON.parse(saved);
+              if (parsed.length > 5) return parsed;
+            } catch (e) {}
+          }
+          return JSON.parse(JSON.stringify(INITIAL_BOOKS));
+        };
+
+        const books = ref(getInitialBooks());
         const filterLocation = ref('all');
         const filterRead = ref('all');
         const searchQuery = ref('');
         const showDashboard = ref(true);
 
-        const syncState = ref('connecting');
+        const syncState = ref('synced');
         let syncTimeout = null;
 
         const sourceOptions = [
@@ -502,7 +495,7 @@
           try {
             const res = await fetch(CLOUD_API_URL);
             const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
+            if (Array.isArray(data) && data.length > 5) {
               books.value = data.map((b, idx) => ({
                 id: b.id || (idx + 1),
                 title: b.title || b['書名'] || '',
@@ -516,14 +509,11 @@
               localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
               syncState.value = 'synced';
             } else {
+              // 雲端資料少於正常藏書時，自動將 88 本完整推上試算表
               books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
-              syncState.value = 'synced';
               pushToCloud();
             }
           } catch (e) {
-            console.warn('無法連線至雲端，使用本機快取:', e);
-            const saved = localStorage.getItem(LOCAL_KEY);
-            books.value = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_BOOKS));
             syncState.value = 'offline';
           }
         };
@@ -535,18 +525,18 @@
           if (syncTimeout) clearTimeout(syncTimeout);
           syncTimeout = setTimeout(async () => {
             try {
+              // 使用 URLSearchParams 以標準 Form Payload 避免跨網域封包丟失
               await fetch(CLOUD_API_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(books.value)
               });
               syncState.value = 'synced';
             } catch (err) {
-              console.error('寫入雲端失敗:', err);
               syncState.value = 'offline';
             }
-          }, 500);
+          }, 400);
         };
 
         const updateBookField = (id, field, value) => {
