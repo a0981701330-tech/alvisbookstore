@@ -499,7 +499,7 @@
       </section>
     </main>
 
-    <!-- 分頁 5：書房手札 (Blog) -->
+    <!-- 分頁 5：書房手札 (Blog / 完全空白自由撰寫) -->
     <main v-if="currentTab === 'blog'" class="space-y-6 animate-fadeIn">
       <div class="bg-white rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-sand-100">
@@ -507,27 +507,38 @@
             <h3 class="font-serif-title font-bold text-xl text-nordic-dark">書房手札 · Notes</h3>
             <p class="text-xs text-nordic-muted mt-0.5">淘書雜感、讀後短摘或任何關於閱讀的碎念</p>
           </div>
-          <button @click="showNewPost = !showNewPost" class="text-xs bg-sand-100 hover:bg-sand-200 text-nordic-dark font-medium px-3 py-1.5 rounded-lg transition">
-            {{ showNewPost ? '取消' : '✍️ 寫新隨筆' }}
+          <button @click="showNewPost = !showNewPost" class="text-xs bg-sand-100 hover:bg-sand-200 text-nordic-dark font-medium px-3.5 py-1.5 rounded-xl transition">
+            {{ showNewPost ? '✕ 關閉' : '✍️ 寫新隨筆' }}
           </button>
         </div>
 
-        <div v-if="showNewPost" class="bg-sand-50 p-4 rounded-2xl border border-nordic-border space-y-3">
-          <input v-model.trim="newPost.title" placeholder="隨筆標題..." class="w-full bg-white border border-nordic-border rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none" />
-          <textarea v-model.trim="newPost.content" rows="3" placeholder="今夜讀到哪一句震撼的話？在書店遇見了什麼故事？" class="w-full bg-white border border-nordic-border rounded-xl p-3 text-xs focus:outline-none"></textarea>
+        <!-- 撰寫隨筆輸入框 -->
+        <div v-if="showNewPost" class="bg-sand-50/80 p-4 sm:p-5 rounded-2xl border border-nordic-border space-y-3">
+          <input v-model.trim="newPost.title" placeholder="隨筆標題..." class="w-full bg-white border border-nordic-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-nordic-slate" />
+          <textarea v-model.trim="newPost.content" rows="4" placeholder="今夜讀到哪一句震撼的話？在書店遇見了什麼故事？" class="w-full bg-white border border-nordic-border rounded-xl p-3.5 text-xs focus:outline-none focus:ring-1 focus:ring-nordic-slate font-serif-title leading-relaxed"></textarea>
           <div class="flex justify-end">
-            <button @click="addPost" class="bg-nordic-dark text-white text-xs px-4 py-1.5 rounded-lg font-medium">發布隨筆</button>
+            <button @click="addPost" class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-5 py-2 rounded-xl font-medium transition shadow-sm">
+              發布隨筆
+            </button>
           </div>
         </div>
 
-        <div class="divide-y divide-sand-100">
-          <div v-for="post in posts" :key="post.id" class="py-4 space-y-1.5">
+        <!-- 空白提示 -->
+        <div v-if="posts.length === 0" class="py-16 text-center text-nordic-muted text-xs space-y-2">
+          <div class="text-2xl">✍️</div>
+          <div>目前手札尚無筆記。</div>
+          <div class="text-[11px] text-gray-400">點擊右上角「寫新隨筆」，記下你的第一段讀書心境吧！</div>
+        </div>
+
+        <!-- 隨筆列表 -->
+        <div v-else class="divide-y divide-sand-100">
+          <div v-for="post in posts" :key="post.id" class="py-5 space-y-2">
             <div class="flex items-center justify-between text-[11px] text-nordic-muted">
               <span>{{ post.date }}</span>
-              <button @click="deletePost(post.id)" class="text-gray-300 hover:text-red-500">✕</button>
+              <button @click="deletePost(post.id)" class="text-gray-300 hover:text-red-500 p-1 transition" title="刪除">✕</button>
             </div>
-            <h4 class="font-serif-title font-bold text-base text-nordic-dark">{{ post.title }}</h4>
-            <p class="text-xs text-nordic-slate whitespace-pre-line leading-relaxed font-serif-title">{{ post.content }}</p>
+            <h4 class="font-serif-title font-bold text-base sm:text-lg text-nordic-dark">{{ post.title }}</h4>
+            <p class="text-xs sm:text-sm text-nordic-slate whitespace-pre-line leading-relaxed font-serif-title">{{ post.content }}</p>
           </div>
         </div>
       </div>
@@ -673,15 +684,6 @@
       {"id": 88, "title": "斜陽", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀"}
     ];
 
-    const INITIAL_POSTS = [
-      {
-        id: 1,
-        title: "讀書人的事，能算偷麼？",
-        date: "2026.09.14",
-        content: "長衫客書坊今日重新梳理落成。將家中與租屋處的書籍一併登錄，八十八冊文字有了去處，心裡也跟著踏實許多。"
-      }
-    ];
-
     const { createApp, ref, computed, onMounted } = Vue;
 
     createApp({
@@ -716,13 +718,12 @@
         const filterRead = ref('all');
         const searchQuery = ref('');
 
+        // 手札資料：預設完全空白，支援持久化快取
         const posts = ref([]);
         try {
           const savedPosts = localStorage.getItem(POSTS_KEY);
-          posts.value = savedPosts ? JSON.parse(savedPosts) : INITIAL_POSTS;
-        } catch (e) {
-          posts.value = INITIAL_POSTS;
-        }
+          if (savedPosts) posts.value = JSON.parse(savedPosts);
+        } catch (e) {}
 
         const showNewPost = ref(false);
         const newPost = ref({ title: '', content: '' });
@@ -806,6 +807,15 @@
               localStorage.setItem(LOCAL_KEY, JSON.stringify(record));
               hasUnsavedChanges.value = false;
               syncState.value = 'synced';
+            } else if (record && record.books) {
+              books.value = record.books;
+              if (Array.isArray(record.posts)) {
+                posts.value = record.posts;
+                localStorage.setItem(POSTS_KEY, JSON.stringify(record.posts));
+              }
+              localStorage.setItem(LOCAL_KEY, JSON.stringify(record.books));
+              hasUnsavedChanges.value = false;
+              syncState.value = 'synced';
             } else {
               syncState.value = 'synced';
               saveToCloud(true);
@@ -823,22 +833,28 @@
 
           isSaving.value = true;
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
+          localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
 
           try {
+            const payload = {
+              books: books.value,
+              posts: posts.value
+            };
+
             const res = await fetch(API_URL, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
                 'X-Master-Key': MASTER_KEY
               },
-              body: JSON.stringify(books.value)
+              body: JSON.stringify(payload)
             });
 
             if (res.ok) {
               isSaving.value = false;
               hasUnsavedChanges.value = false;
               syncState.value = 'synced';
-              if (!isSilent) alert('✓ 極速同步成功！資料已即刻寫入雲端。');
+              if (!isSilent) alert('✓ 極速同步成功！藏書與手札已即刻寫入雲端。');
             } else {
               throw new Error('伺服器未回傳成功');
             }
@@ -936,7 +952,6 @@
             return;
           }
 
-          // 1. 強制要求繁體中文（hl=zh-TW, country=TW）
           const fetchGoogle = async () => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2500);
@@ -946,7 +961,6 @@
             const data = await res.json();
             
             if (data.totalItems > 0 && data.items && data.items.length > 0) {
-              // 優先挑選具有繁體中文編目的項目
               const item = data.items.find(it => it.volumeInfo && (it.volumeInfo.language === 'zh-TW' || it.volumeInfo.language === 'zh')) || data.items[0];
               const info = item.volumeInfo;
 
@@ -959,7 +973,6 @@
             throw new Error('Google Books 查無繁中資料');
           };
 
-          // 2. 備援 Open Library
           const fetchOpenLibrary = async () => {
             const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&jscmd=data&format=json`);
             const data = await res.json();
@@ -1049,9 +1062,10 @@
           }
         };
 
+        // 手札自訂新增
         const addPost = () => {
           if (!newPost.value.title || !newPost.value.content) {
-            alert('請填寫標題與內容');
+            alert('請填寫隨筆標題與內容');
             return;
           }
           const today = new Date();
@@ -1062,14 +1076,18 @@
             content: newPost.value.content,
             date: dateStr
           });
+          hasUnsavedChanges.value = true;
           localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
           newPost.value = { title: '', content: '' };
           showNewPost.value = false;
+          alert('✓ 隨筆已發布！請記得點擊右上角「💾 儲存變更」同步備份至雲端。');
         };
 
+        // 刪除手札
         const deletePost = (id) => {
           if (confirm('確定刪除這篇隨筆嗎？')) {
             posts.value = posts.value.filter(p => p.id !== id);
+            hasUnsavedChanges.value = true;
             localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
           }
         };
@@ -1210,11 +1228,12 @@
         });
 
         const exportData = () => {
-          const blob = new Blob([JSON.stringify(books.value, null, 2)], { type: 'application/json' });
+          const payload = { books: books.value, posts: posts.value };
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `mubone-books-${new Date().toISOString().slice(0, 10)}.json`;
+          a.download = `mubone-study-${new Date().toISOString().slice(0, 10)}.json`;
           a.click();
         };
 
@@ -1224,10 +1243,17 @@
           const reader = new FileReader();
           reader.onload = (event) => {
             try {
-              books.value = JSON.parse(event.target.result);
+              const data = JSON.parse(event.target.result);
+              if (Array.isArray(data)) {
+                books.value = data;
+              } else if (data && data.books) {
+                books.value = data.books;
+                if (Array.isArray(data.posts)) posts.value = data.posts;
+              }
               hasUnsavedChanges.value = true;
               localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
-              alert('匯入成功！請點擊「💾 儲存」極速寫入雲端。');
+              localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
+              alert('匯入成功！請點擊「💾 儲存變更」以寫入雲端。');
             } catch (err) {
               alert('JSON 格式錯誤，請確認檔案內容');
             }
@@ -1236,10 +1262,12 @@
         };
 
         const resetToDefault = () => {
-          if (confirm('確定重置回初始 88 本資料嗎？（完成後請點擊儲存變更）')) {
+          if (confirm('確定重置回初始 88 本資料並清空手札嗎？（完成後請點擊儲存變更）')) {
             books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+            posts.value = [];
             hasUnsavedChanges.value = true;
             localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
+            localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
           }
         };
 
