@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <script>
     tailwind.config = {
@@ -43,299 +44,496 @@
     .font-serif-title { font-family: 'Noto Serif TC', serif; }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-thumb { background: #D9D3C7; border-radius: 9999px; }
+    #reader video { border-radius: 12px; }
   </style>
 </head>
-<body class="min-h-screen py-6 md:py-12 px-3 sm:px-6 md:px-8">
-  <div id="app" class="max-w-5xl mx-auto">
+<body class="min-h-screen py-6 md:py-10 px-3 sm:px-6 md:px-8">
+  <div id="app" class="max-w-4xl mx-auto">
     
-    <!-- 頁首與統計 -->
-    <header class="flex flex-col lg:flex-row lg:items-end justify-between pb-5 mb-5 md:pb-6 md:mb-6 border-b border-nordic-border gap-4 lg:gap-6">
-      <div>
-        <div class="flex items-center gap-2 mb-1.5">
+    <!-- 頂部導航列與狀態 -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-nordic-border gap-4">
+      <div class="cursor-pointer" @click="currentTab = 'home'">
+        <div class="flex items-center gap-2 mb-1">
           <span class="w-2 h-2 rounded-full" :class="syncStatusClass"></span>
-          <span class="text-[10px] sm:text-xs tracking-widest uppercase font-semibold text-nordic-muted">
-            Personal Bookshelf · {{ syncStatusText }}
+          <span class="text-[10px] tracking-widest uppercase font-semibold text-nordic-muted">
+            長衫客書坊 · {{ syncStatusText }}
           </span>
         </div>
-        <h1 class="text-2xl sm:text-3xl md:text-4xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
-        <p class="text-xs sm:text-sm font-serif-title text-nordic-muted mt-1 tracking-wide">讀書人的事，能算偷麼？</p>
+        <h1 class="text-2xl sm:text-3xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
       </div>
 
-      <!-- 統計卡片 -->
-      <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5">
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
-          <div class="text-[10px] sm:text-[11px] text-nordic-muted">總藏書</div>
-          <div class="text-base sm:text-lg font-bold text-nordic-dark">{{ books.length }}</div>
-        </div>
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
-          <div class="text-[10px] sm:text-[11px] text-nordic-sage font-medium">閱讀完畢</div>
-          <div class="text-base sm:text-lg font-bold text-nordic-sage">{{ stats.finished }}</div>
-        </div>
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
-          <div class="text-[10px] sm:text-[11px] text-[#A37844] font-medium">閱讀中</div>
-          <div class="text-base sm:text-lg font-bold text-[#A37844]">{{ stats.reading }}</div>
-        </div>
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm">
-          <div class="text-[10px] sm:text-[11px] text-[#556951] font-medium">在家</div>
-          <div class="text-base sm:text-lg font-bold text-[#556951]">{{ stats.home }}</div>
-        </div>
-        <div class="bg-white/90 border border-nordic-border rounded-xl px-2.5 py-2 text-center shadow-sm col-span-2 sm:col-span-1">
-          <div class="text-[10px] sm:text-[11px] text-[#8C6D4A] font-medium">租屋處</div>
-          <div class="text-base sm:text-lg font-bold text-[#8C6D4A]">{{ stats.rental }}</div>
-        </div>
+      <!-- 分頁切換選單與儲存 -->
+      <div class="flex flex-wrap items-center gap-2">
+        <nav class="flex items-center bg-white/90 border border-nordic-border rounded-xl p-1 shadow-sm text-xs font-medium">
+          <button v-for="tab in tabs" :key="tab.id"
+                  @click="currentTab = tab.id"
+                  :class="currentTab === tab.id ? 'bg-nordic-dark text-white font-semibold' : 'text-nordic-slate hover:text-nordic-dark hover:bg-sand-100'"
+                  class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+            <span>{{ tab.icon }}</span>
+            <span>{{ tab.label }}</span>
+            <span v-if="tab.badge" class="ml-0.5 px-1.5 py-0.2 bg-purple-100 text-purple-700 text-[10px] rounded-full font-bold">
+              {{ tab.badge }}
+            </span>
+          </button>
+        </nav>
+
+        <!-- 核心極速儲存按鈕 -->
+        <button @click="saveToCloud" 
+                :disabled="isSaving"
+                :class="hasUnsavedChanges ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold ring-2 ring-amber-300 animate-pulse' : 'bg-nordic-slate hover:bg-nordic-dark text-white'"
+                class="px-3 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5 text-xs disabled:opacity-50 cursor-pointer">
+          <span v-if="isSaving">⏳ 儲存中</span>
+          <span v-else-if="hasUnsavedChanges">💾 儲存變更</span>
+          <span v-else>💾 儲存</span>
+        </button>
       </div>
     </header>
 
-    <!-- 工具列 -->
-    <div class="flex flex-wrap justify-between items-center mb-5 gap-2">
-      <button @click="showDashboard = !showDashboard" 
-              :class="showDashboard ? 'bg-nordic-dark text-white' : 'bg-white text-nordic-slate border border-nordic-border hover:bg-sand-100'"
-              class="text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5">
-        <span>{{ showDashboard ? '✕ 收合統計' : '📊 藏書數據分析' }}</span>
-      </button>
+    <!-- ==================== 分頁 1：首頁 (Landing Page) ==================== -->
+    <main v-if="currentTab === 'home'" class="space-y-8 animate-fadeIn">
+      <!-- 書房門楣大橫幅 -->
+      <section class="bg-white rounded-3xl p-6 sm:p-10 border border-nordic-border shadow-sm text-center relative overflow-hidden">
+        <div class="max-w-xl mx-auto space-y-3">
+          <span class="text-xs tracking-widest text-nordic-muted uppercase font-semibold">Welcome to the study</span>
+          <h2 class="text-3xl sm:text-4xl font-serif-title font-bold text-nordic-dark leading-tight">
+            讀書人的事，能算偷麼？
+          </h2>
+          <p class="text-xs sm:text-sm text-nordic-muted font-serif-title leading-relaxed pt-1">
+            山居有竹，隨意展卷。這裡記錄著散落在老家與租屋處的每一冊文字、未讀的期待與翻閱的軌跡。
+          </p>
+        </div>
 
-      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
-        <button @click="saveToCloud" 
-                :disabled="isSaving"
-                :class="hasUnsavedChanges ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold ring-2 ring-amber-300 animate-pulse' : 'bg-nordic-dark hover:bg-nordic-slate text-white'"
-                class="px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
-          <span v-if="isSaving">⏳ 儲存中...</span>
-          <span v-else-if="hasUnsavedChanges">💾 儲存變更 (未同步)</span>
-          <span v-else>💾 儲存至雲端</span>
-        </button>
-
-        <button @click="fetchFromCloud" class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 cursor-pointer">
-          <span>🔄</span> 重新整理
-        </button>
-        <button @click="exportData" class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
-          ↓ 備份
-        </button>
-        <label class="font-medium bg-white hover:bg-sand-100 border border-nordic-border px-2.5 sm:px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
-          ↑ 匯入
-          <input type="file" @change="importData" class="hidden" accept=".json" />
-        </label>
-        <button @click="resetToDefault" class="text-gray-400 hover:text-red-600 px-1.5 py-1.5 transition text-[11px] cursor-pointer">
-          重置
-        </button>
-      </div>
-    </div>
-
-    <!-- 即時數據分析儀表板 -->
-    <section v-if="showDashboard" class="bg-white rounded-2xl p-4 sm:p-6 border border-nordic-border shadow-sm mb-6 space-y-5 transition-all">
-      <div class="flex justify-between items-center border-b border-sand-100 pb-2.5">
-        <h2 class="text-xs font-bold text-nordic-slate uppercase tracking-wider flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-nordic-sage"></span>
-          藏書數據即時分析
-        </h2>
-        <span class="text-[10px] text-nordic-muted">即時連動</span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
-          <div class="flex justify-between items-center mb-1.5">
-            <span class="text-xs font-semibold text-nordic-slate">📖 閱讀完成度</span>
-            <span class="text-xs font-bold text-nordic-sage">{{ analytics.readRate }}%</span>
+        <!-- 數據微縮卡片 -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 max-w-2xl mx-auto text-left">
+          <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70 cursor-pointer hover:bg-sand-100 transition"
+               @click="currentTab = 'archive'">
+            <div class="text-[11px] text-nordic-muted">實體藏書</div>
+            <div class="text-xl font-bold text-nordic-dark mt-0.5">{{ stats.totalOwned }} <span class="text-xs font-normal text-nordic-muted">冊</span></div>
           </div>
-          <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
-            <div :style="{ width: analytics.readRate + '%' }" class="bg-nordic-sage transition-all duration-500"></div>
-            <div :style="{ width: analytics.readingRate + '%' }" class="bg-[#D9A75E] transition-all duration-500"></div>
+          <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70 cursor-pointer hover:bg-sand-100 transition"
+               @click="currentTab = 'archive'">
+            <div class="text-[11px] text-nordic-sage font-medium">閱讀完畢</div>
+            <div class="text-xl font-bold text-nordic-sage mt-0.5">{{ stats.finished }} <span class="text-xs font-normal text-nordic-muted">冊 ({{ analytics.readRate }}%)</span></div>
           </div>
-          <div class="flex justify-between text-[10px] sm:text-[11px] text-nordic-muted mt-2">
-            <span>完畢: {{ stats.finished }}</span>
-            <span>閱讀中: {{ stats.reading }}</span>
-            <span>待讀: {{ stats.unread }}</span>
+          <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70">
+            <div class="text-[11px] text-[#556951] font-medium">老家 / 租屋</div>
+            <div class="text-xl font-bold text-nordic-dark mt-0.5">{{ stats.home }} <span class="text-xs font-normal text-nordic-muted">/ {{ stats.rental }}</span></div>
+          </div>
+          <div class="bg-purple-50/60 p-3.5 rounded-2xl border border-purple-100 cursor-pointer hover:bg-purple-100/60 transition"
+               @click="currentTab = 'wishlist'">
+            <div class="text-[11px] text-purple-700 font-medium">願望清單</div>
+            <div class="text-xl font-bold text-purple-700 mt-0.5">{{ stats.wishlist }} <span class="text-xs font-normal text-nordic-muted">冊待購</span></div>
           </div>
         </div>
 
-        <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
-          <div class="flex justify-between items-center mb-1.5">
-            <span class="text-xs font-semibold text-nordic-slate">🏷️ 新書 / 二手書比率</span>
-            <span class="text-xs text-nordic-muted">二手 {{ analytics.usedPercent }}%</span>
-          </div>
-          <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
-            <div :style="{ width: analytics.newPercent + '%' }" class="bg-nordic-dark transition-all duration-500"></div>
-            <div :style="{ width: analytics.usedPercent + '%' }" class="bg-nordic-warmtaupe transition-all duration-500"></div>
-          </div>
-          <div class="flex justify-between text-[10px] sm:text-[11px] text-nordic-muted mt-2">
-            <span>新書: {{ analytics.newCount }} ({{ analytics.newPercent }}%)</span>
-            <span>二手: {{ analytics.usedCount }} ({{ analytics.usedPercent }}%)</span>
-          </div>
+        <!-- 快速捷徑 -->
+        <div class="flex flex-wrap justify-center items-center gap-3 mt-8 text-xs font-medium">
+          <button @click="currentTab = 'archive'" class="bg-nordic-dark hover:bg-nordic-slate text-white px-5 py-2.5 rounded-xl shadow-sm transition">
+            📖 瀏覽藏書縱覽
+          </button>
+          <button @click="currentTab = 'add'" class="bg-sand-100 hover:bg-sand-200 text-nordic-dark px-5 py-2.5 rounded-xl transition">
+            📷 掃描 / 新增書籍
+          </button>
         </div>
-      </div>
+      </section>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-        <div class="space-y-1.5">
-          <h3 class="text-xs font-semibold text-nordic-slate">✍️ 熱門作者 (Top 5)</h3>
-          <div v-for="a in analytics.topAuthors" :key="a.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
-            <span class="truncate max-w-[140px] text-nordic-dark">{{ a.name }}</span>
-            <span class="font-mono text-[11px] text-nordic-muted">{{ a.count }} 冊</span>
-          </div>
+      <!-- 正在翻閱區 (Currently Reading) -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-serif-title font-bold text-lg text-nordic-dark flex items-center gap-2">
+            <span>📖</span> 正在翻閱 · Current Reading
+          </h3>
+          <span class="text-xs text-nordic-muted">共 {{ currentlyReadingBooks.length }} 冊</span>
         </div>
 
-        <div class="space-y-1.5">
-          <h3 class="text-xs font-semibold text-nordic-slate">🏛️ 主要出版社 (Top 5)</h3>
-          <div v-for="p in analytics.topPublishers" :key="p.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
-            <span class="truncate max-w-[140px] text-nordic-dark">{{ p.name }}</span>
-            <span class="font-mono text-[11px] text-nordic-muted">{{ p.count }} 冊</span>
-          </div>
+        <div v-if="currentlyReadingBooks.length === 0" class="bg-white rounded-2xl p-8 text-center text-nordic-muted text-xs border border-nordic-border">
+          目前沒有標記為「閱讀中」的書籍，去書架上挑一本開始吧！
         </div>
 
-        <div class="space-y-1.5">
-          <h3 class="text-xs font-semibold text-nordic-slate">🛒 購書出處 (Top 5)</h3>
-          <div v-for="s in analytics.topSources" :key="s.name" class="flex items-center justify-between text-xs py-1 px-2 rounded bg-sand-50">
-            <span class="truncate max-w-[140px] text-nordic-dark">{{ s.name }}</span>
-            <span class="font-mono text-[11px] text-nordic-muted">{{ s.count }} 冊</span>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="b in currentlyReadingBooks" :key="b.id" 
+               class="bg-white rounded-2xl p-5 border border-nordic-border shadow-sm flex flex-col justify-between space-y-4 hover:border-nordic-warmtaupe transition">
+            <div>
+              <div class="flex items-center justify-between text-xs text-nordic-muted mb-2">
+                <span class="bg-[#F2EADB] text-[#8C6228] px-2 py-0.5 rounded-md font-semibold text-[11px]">閱讀中</span>
+                <span>{{ b.location }} · {{ b.type }}</span>
+              </div>
+              <h4 class="font-serif-title font-bold text-lg text-nordic-dark leading-snug">{{ b.title }}</h4>
+              <p class="text-xs text-nordic-muted mt-1">{{ b.author }} <span v-if="b.publisher">/ {{ b.publisher }}</span></p>
+            </div>
+            
+            <div class="pt-3 border-t border-sand-100 flex items-center justify-between">
+              <span class="text-[11px] text-nordic-muted">購於 {{ b.source || '未記錄' }}</span>
+              <button @click="markAsFinished(b.id)" class="text-xs bg-sand-100 hover:bg-sand-200 text-nordic-slate px-3 py-1 rounded-lg transition font-medium">
+                ✓ 標記讀完
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
 
-    <!-- 篩選與搜尋列 -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-      <div class="flex flex-wrap items-center gap-1.5 text-xs">
-        <span class="text-nordic-muted text-[11px]">位置:</span>
-        <button v-for="loc in locationFilters" :key="loc.val" 
-                @click="filterLocation = loc.val"
-                :class="filterLocation === loc.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border'"
-                class="px-2.5 py-1 rounded-lg transition text-xs cursor-pointer">
-          {{ loc.label }}
-        </button>
+    <!-- ==================== 分頁 2：藏書縱覽 (Archive) ==================== -->
+    <main v-if="currentTab === 'archive'" class="space-y-4 animate-fadeIn">
+      <!-- 篩選與功能切換 -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-nordic-muted text-[11px]">位置:</span>
+          <button v-for="loc in locationFilters" :key="loc.val" 
+                  @click="filterLocation = loc.val"
+                  :class="filterLocation === loc.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border'"
+                  class="px-2.5 py-1 rounded-lg transition text-xs">
+            {{ loc.label }}
+          </button>
 
-        <span class="text-nordic-muted text-[11px] ml-2">進度:</span>
-        <button v-for="rf in readFilters" :key="rf.val"
-                @click="filterRead = rf.val"
-                :class="filterRead === rf.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border'"
-                class="px-2.5 py-1 rounded-lg transition text-xs cursor-pointer">
-          {{ rf.label }}
-        </button>
-      </div>
-
-      <div class="relative w-full md:w-64">
-        <input v-model="searchQuery" placeholder="搜尋書名、作者、出版社..."
-               class="w-full bg-white border border-nordic-border rounded-xl pl-8 pr-3 py-1.5 sm:py-2 text-xs md:text-sm text-nordic-dark placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-nordic-slate transition shadow-sm" />
-        <span class="absolute left-2.5 top-2 sm:top-2.5 text-gray-400 text-xs">🔍</span>
-      </div>
-    </div>
-
-    <!-- 書籍清單表格 -->
-    <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
-      <div v-if="filteredBooks.length === 0" class="py-12 text-center text-nordic-muted text-sm font-light">
-        無符合條件的書籍
-      </div>
-
-      <div v-for="(b, idx) in filteredBooks" :key="b.id" 
-           class="p-3.5 sm:p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-sand-50/60 transition relative">
-        
-        <div class="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 pr-6 md:pr-0">
-          <span class="mt-0.5 text-[11px] font-mono font-medium text-nordic-muted/80 bg-sand-100 px-1.5 py-0.5 rounded flex-shrink-0">
-            {{ formatIndex(idx + 1) }}
-          </span>
-
-          <div class="min-w-0 flex-1">
-            <h3 class="font-serif-title font-semibold text-base sm:text-lg text-nordic-dark tracking-tight leading-snug">
-              {{ b.title }}
-            </h3>
-
-            <p class="text-xs text-nordic-muted mt-1 flex flex-wrap items-center gap-1.5">
-              <span v-if="b.author" class="text-nordic-slate font-medium">{{ b.author }}</span>
-              <span v-if="b.author && b.publisher" class="text-gray-300">•</span>
-              <span v-if="b.publisher">{{ b.publisher }}</span>
-            </p>
-          </div>
-
-          <button @click="deleteBook(b.id)" class="md:hidden absolute top-3.5 right-3.5 text-gray-300 hover:text-red-500 p-1 text-sm transition" title="刪除">
-            ✕
+          <span class="text-nordic-muted text-[11px] ml-2">進度:</span>
+          <button v-for="rf in readFilters" :key="rf.val"
+                  @click="filterRead = rf.val"
+                  :class="filterRead === rf.val ? 'bg-nordic-dark text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border'"
+                  class="px-2.5 py-1 rounded-lg transition text-xs">
+            {{ rf.label }}
           </button>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100/80">
-          <select :value="b.readingStatus" 
-                  @change="updateBookField(b.id, 'readingStatus', $event.target.value)"
-                  :class="getReadingStatusStyle(b.readingStatus)"
-                  class="w-full md:w-auto text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
-            <option value="未讀">待讀</option>
-            <option value="閱讀中">📖 閱讀中</option>
-            <option value="閱讀完畢">✓ 完畢</option>
-          </select>
-
-          <select :value="b.type" 
-                  @change="updateBookField(b.id, 'type', $event.target.value)"
-                  :class="b.type === '二手' ? 'bg-[#EAE4D9] text-[#635748]' : 'bg-sand-100 text-nordic-slate'"
-                  class="w-full md:w-auto text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
-            <option value="新">新書</option>
-            <option value="二手">二手</option>
-          </select>
-
-          <!-- 動態出處選單 -->
-          <select :value="b.source" 
-                  @change="handleSourceSelect(b, $event.target.value)"
-                  class="w-full md:w-auto text-xs text-nordic-slate bg-sand-100 truncate rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer max-w-[150px]">
-            <option value="">🛒 未填出處</option>
-            <option v-for="src in allSourceOptions" :key="src" :value="src">{{ src }}</option>
-            <option value="__ADD_NEW__" class="font-bold text-nordic-dark bg-sand-200">➕ 自訂新增出處...</option>
-          </select>
-
-          <select :value="b.location" 
-                  @change="updateBookField(b.id, 'location', $event.target.value)"
-                  :class="getLocationBadgeStyle(b.location)"
-                  class="w-full md:w-auto text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none focus:border-nordic-border transition cursor-pointer">
-            <option value="在家">📍 在家</option>
-            <option value="在租屋處">🏢 租屋處</option>
-            <option value="售出">🏷️ 售出</option>
-          </select>
-
-          <button @click="deleteBook(b.id)" class="hidden md:block text-gray-300 hover:text-red-500 text-xs p-1.5 transition ml-1 cursor-pointer" title="刪除">
-            ✕
+        <div class="flex items-center gap-2">
+          <button @click="showDashboard = !showDashboard" 
+                  class="bg-white border border-nordic-border text-nordic-slate hover:bg-sand-100 text-xs px-2.5 py-1.5 rounded-xl shadow-sm transition">
+            {{ showDashboard ? '收合數據' : '📊 數據分析' }}
           </button>
+          <div class="relative flex-1 md:w-56">
+            <input v-model="searchQuery" placeholder="搜尋書名、作者..."
+                   class="w-full bg-white border border-nordic-border rounded-xl pl-7 pr-3 py-1.5 text-xs text-nordic-dark focus:outline-none focus:ring-1 focus:ring-nordic-slate transition shadow-sm" />
+            <span class="absolute left-2.5 top-2 text-gray-400 text-xs">🔍</span>
+          </div>
         </div>
       </div>
 
-      <!-- 底部新增欄位 -->
-      <div class="p-3.5 sm:p-5 bg-sand-50/70 transition border-t-2 border-dashed border-nordic-border/70">
-        <form @submit.prevent="addBook" class="space-y-2.5 md:space-y-0 md:flex md:items-center md:justify-between md:gap-3">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
-            <input v-model.trim="newBook.title" placeholder="書名 *" required
-                   class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
-            <input v-model.trim="newBook.author" placeholder="作者"
-                   class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
-            <input v-model.trim="newBook.publisher" placeholder="出版社"
-                   class="bg-white border border-nordic-border rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-nordic-slate transition" />
+      <!-- 藏書數據分析儀表板 (可開合) -->
+      <section v-if="showDashboard" class="bg-white rounded-2xl p-4 sm:p-6 border border-nordic-border shadow-sm space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
+            <div class="flex justify-between items-center mb-1.5 text-xs font-semibold">
+              <span class="text-nordic-slate">📖 閱讀完畢率</span>
+              <span class="text-nordic-sage font-bold">{{ analytics.readRate }}%</span>
+            </div>
+            <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
+              <div :style="{ width: analytics.readRate + '%' }" class="bg-nordic-sage transition-all duration-500"></div>
+              <div :style="{ width: analytics.readingRate + '%' }" class="bg-[#D9A75E] transition-all duration-500"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
+              <span>完畢: {{ stats.finished }}</span>
+              <span>閱讀中: {{ stats.reading }}</span>
+              <span>待讀: {{ stats.unread }}</span>
+            </div>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 md:flex items-center gap-2">
-            <select v-model="newBook.readingStatus" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+          <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
+            <div class="flex justify-between items-center mb-1.5 text-xs font-semibold">
+              <span class="text-nordic-slate">🏷️ 新書 / 二手比率</span>
+              <span class="text-nordic-muted">二手 {{ analytics.usedPercent }}%</span>
+            </div>
+            <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
+              <div :style="{ width: analytics.newPercent + '%' }" class="bg-nordic-dark transition-all duration-500"></div>
+              <div :style="{ width: analytics.usedPercent + '%' }" class="bg-nordic-warmtaupe transition-all duration-500"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
+              <span>新書: {{ analytics.newCount }} ({{ analytics.newPercent }}%)</span>
+              <span>二手: {{ analytics.usedCount }} ({{ analytics.usedPercent }}%)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+          <div class="space-y-1">
+            <h4 class="text-xs font-semibold text-nordic-slate">✍️ 常讀作者</h4>
+            <div v-for="a in analytics.topAuthors" :key="a.name" class="flex justify-between text-xs py-0.5 px-2 rounded bg-sand-50">
+              <span class="truncate max-w-[130px]">{{ a.name }}</span>
+              <span class="font-mono text-nordic-muted">{{ a.count }}冊</span>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-xs font-semibold text-nordic-slate">🏛️ 出版社</h4>
+            <div v-for="p in analytics.topPublishers" :key="p.name" class="flex justify-between text-xs py-0.5 px-2 rounded bg-sand-50">
+              <span class="truncate max-w-[130px]">{{ p.name }}</span>
+              <span class="font-mono text-nordic-muted">{{ p.count }}冊</span>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-xs font-semibold text-nordic-slate">🛒 淘書出處</h4>
+            <div v-for="s in analytics.topSources" :key="s.name" class="flex justify-between text-xs py-0.5 px-2 rounded bg-sand-50">
+              <span class="truncate max-w-[130px]">{{ s.name }}</span>
+              <span class="font-mono text-nordic-muted">{{ s.count }}冊</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 書籍表格 -->
+      <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
+        <div v-if="filteredOwnedBooks.length === 0" class="py-12 text-center text-nordic-muted text-sm font-light">
+          無符合條件的藏書
+        </div>
+
+        <div v-for="(b, idx) in filteredOwnedBooks" :key="b.id" 
+             class="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-sand-50/60 transition relative">
+          
+          <div class="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 pr-6 md:pr-0">
+            <span class="mt-0.5 text-[11px] font-mono text-nordic-muted/80 bg-sand-100 px-1.5 py-0.5 rounded flex-shrink-0">
+              {{ formatIndex(idx + 1) }}
+            </span>
+
+            <div class="min-w-0 flex-1">
+              <h3 class="font-serif-title font-semibold text-base sm:text-lg text-nordic-dark leading-snug">
+                {{ b.title }}
+              </h3>
+              <p class="text-xs text-nordic-muted mt-0.5 flex flex-wrap items-center gap-1.5">
+                <span v-if="b.author" class="text-nordic-slate">{{ b.author }}</span>
+                <span v-if="b.author && b.publisher" class="text-gray-300">•</span>
+                <span v-if="b.publisher">{{ b.publisher }}</span>
+              </p>
+            </div>
+
+            <button @click="deleteBook(b.id)" class="md:hidden absolute top-3.5 right-3.5 text-gray-300 hover:text-red-500 p-1 text-sm transition" title="刪除">
+              ✕
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100">
+            <select :value="b.readingStatus" 
+                    @change="updateBookField(b.id, 'readingStatus', $event.target.value)"
+                    :class="getReadingStatusStyle(b.readingStatus)"
+                    class="text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none transition cursor-pointer">
               <option value="未讀">待讀</option>
               <option value="閱讀中">📖 閱讀中</option>
               <option value="閱讀完畢">✓ 完畢</option>
             </select>
-            <select v-model="newBook.type" class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+
+            <select :value="b.type" 
+                    @change="updateBookField(b.id, 'type', $event.target.value)"
+                    :class="b.type === '二手' ? 'bg-[#EAE4D9] text-[#635748]' : 'bg-sand-100 text-nordic-slate'"
+                    class="text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none transition cursor-pointer">
               <option value="新">新書</option>
               <option value="二手">二手</option>
             </select>
-            <select :value="newBook.source" 
-                    @change="handleNewBookSourceSelect($event.target.value)"
-                    class="bg-white border border-nordic-border rounded-lg px-2 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer truncate max-w-[140px]">
-              <option value="">出處(可選)</option>
+
+            <select :value="b.source" 
+                    @change="handleSourceSelect(b, $event.target.value)"
+                    class="text-xs text-nordic-slate bg-sand-100 truncate rounded-lg px-2 py-1.5 border border-transparent focus:outline-none transition cursor-pointer max-w-[140px]">
+              <option value="">🛒 未填出處</option>
               <option v-for="src in allSourceOptions" :key="src" :value="src">{{ src }}</option>
-              <option value="__ADD_NEW__" class="font-bold text-nordic-dark bg-sand-200">➕ 自訂新增出處...</option>
+              <option value="__ADD_NEW__" class="font-bold">➕ 自訂出處...</option>
             </select>
-            <select v-model="newBook.location" class="bg-white border border-nordic-border rounded-lg px-2.5 py-1.5 text-xs text-nordic-dark focus:outline-none cursor-pointer">
+
+            <select :value="b.location" 
+                    @change="updateBookField(b.id, 'location', $event.target.value)"
+                    :class="getLocationBadgeStyle(b.location)"
+                    class="text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none transition cursor-pointer">
               <option value="在家">📍 在家</option>
               <option value="在租屋處">🏢 租屋處</option>
+              <option value="願望待購">🔖 轉入願望清單</option>
               <option value="售出">🏷️ 售出</option>
             </select>
-            <button type="submit" class="col-span-2 sm:col-span-4 md:col-auto bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-4 py-2 md:py-1.5 rounded-lg shadow-sm font-medium transition cursor-pointer">
-              + 新增書籍
+
+            <button @click="deleteBook(b.id)" class="hidden md:block text-gray-300 hover:text-red-500 text-xs p-1.5 transition ml-1" title="刪除">
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== 分頁 3：願望清單 (Wishlist) ==================== -->
+    <main v-if="currentTab === 'wishlist'" class="space-y-4 animate-fadeIn">
+      <div class="bg-purple-50/70 rounded-2xl p-4 sm:p-5 border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 class="font-serif-title font-bold text-lg text-purple-950 flex items-center gap-2">
+            <span>🔖</span> 待購書單 · Wishlist
+          </h3>
+          <p class="text-xs text-purple-700/80 mt-0.5">逛書店、二手書攤時的心動名單。買下後一鍵「入庫」，立即歸檔到書房。</p>
+        </div>
+        <button @click="currentTab = 'add'; newBook.location = '願望待購'" class="bg-purple-700 hover:bg-purple-800 text-white text-xs px-3.5 py-2 rounded-xl shadow-sm transition self-start sm:self-auto">
+          + 加入願望書目
+        </button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
+        <div v-if="wishlistBooks.length === 0" class="py-12 text-center text-nordic-muted text-xs">
+          目前願望清單空空如也，逛書店時隨時加進來吧！
+        </div>
+
+        <div v-for="(b, idx) in wishlistBooks" :key="b.id" 
+             class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-sand-50/60 transition">
+          <div class="flex items-start gap-3">
+            <span class="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md mt-0.5">#{{ idx + 1 }}</span>
+            <div>
+              <h4 class="font-serif-title font-semibold text-base text-nordic-dark">{{ b.title }}</h4>
+              <p class="text-xs text-nordic-muted mt-0.5">{{ b.author || '未記錄作者' }} <span v-if="b.publisher">/ {{ b.publisher }}</span></p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+            <button @click="moveToOwned(b, '在家')" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium px-2.5 py-1.5 rounded-lg border border-emerald-200 transition">
+              ✓ 買了，放老家
+            </button>
+            <button @click="moveToOwned(b, '在租屋處')" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium px-2.5 py-1.5 rounded-lg border border-amber-200 transition">
+              ✓ 買了，放租屋處
+            </button>
+            <button @click="deleteBook(b.id)" class="text-gray-300 hover:text-red-500 text-xs p-1.5 transition ml-1" title="移除">
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== 分頁 4：新增書籍 & 條碼掃描 (Add & Scan) ==================== -->
+    <main v-if="currentTab === 'add'" class="space-y-6 animate-fadeIn">
+      <section class="bg-white rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-sand-100 gap-3">
+          <div>
+            <h3 class="font-serif-title font-bold text-xl text-nordic-dark">新書入藏登記</h3>
+            <p class="text-xs text-nordic-muted mt-1">支援手機相機對準 ISBN 條碼自動帶入，或手動登記書目資料</p>
+          </div>
+          <button @click="startScanner" type="button" 
+                  class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-4 py-2.5 rounded-xl shadow-sm font-medium transition flex items-center gap-2 self-start sm:self-auto cursor-pointer">
+            <span>📷</span> 啟動鏡頭掃描條碼
+          </button>
+        </div>
+
+        <form @submit.prevent="addBook" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">書名 *</label>
+              <input v-model.trim="newBook.title" placeholder="例如：變形記" required
+                     class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:bg-white focus:ring-1 focus:ring-nordic-slate transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">作者</label>
+              <input v-model.trim="newBook.author" placeholder="例如：卡夫卡"
+                     class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:bg-white focus:ring-1 focus:ring-nordic-slate transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">出版社</label>
+              <input v-model.trim="newBook.publisher" placeholder="例如：漫遊者"
+                     class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:bg-white focus:ring-1 focus:ring-nordic-slate transition" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">存放位置 / 清單</label>
+              <select v-model="newBook.location" class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer">
+                <option value="在家">📍 老家</option>
+                <option value="在租屋處">🏢 租屋處</option>
+                <option value="願望待購">🔖 願望清單 (待購)</option>
+                <option value="售出">🏷️ 售出</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">書況</label>
+              <select v-model="newBook.type" class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer">
+                <option value="新">新書</option>
+                <option value="二手">二手</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">購書出處</label>
+              <select :value="newBook.source" 
+                      @change="handleNewBookSourceSelect($event.target.value)"
+                      class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer truncate">
+                <option value="">🛒 未填出處</option>
+                <option v-for="src in allSourceOptions" :key="src" :value="src">{{ src }}</option>
+                <option value="__ADD_NEW__" class="font-bold">➕ 自訂新增出處...</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">閱讀進度</label>
+              <select v-model="newBook.readingStatus" class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer">
+                <option value="未讀">待讀</option>
+                <option value="閱讀中">📖 閱讀中</option>
+                <option value="閱讀完畢">✓ 完畢</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-4 flex justify-end">
+            <button type="submit" class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-6 py-2.5 rounded-xl shadow-sm font-semibold transition cursor-pointer">
+              ＋ 正式收錄此書
             </button>
           </div>
         </form>
-      </div>
+      </section>
+    </main>
 
+    <!-- ==================== 分頁 5：書房手札 / 部落格 (Blog) ==================== -->
+    <main v-if="currentTab === 'blog'" class="space-y-6 animate-fadeIn">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-sand-100">
+          <div>
+            <h3 class="font-serif-title font-bold text-xl text-nordic-dark">書房手札 · Notes</h3>
+            <p class="text-xs text-nordic-muted mt-0.5">淘書雜感、讀後短摘或任何關於閱讀的碎念</p>
+          </div>
+          <button @click="showNewPost = !showNewPost" class="text-xs bg-sand-100 hover:bg-sand-200 text-nordic-dark font-medium px-3 py-1.5 rounded-lg transition">
+            {{ showNewPost ? '取消' : '✍️ 寫新隨筆' }}
+          </button>
+        </div>
+
+        <!-- 撰寫新隨筆 -->
+        <div v-if="showNewPost" class="bg-sand-50 p-4 rounded-2xl border border-nordic-border space-y-3">
+          <input v-model.trim="newPost.title" placeholder="隨筆標題..." class="w-full bg-white border border-nordic-border rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none" />
+          <textarea v-model.trim="newPost.content" rows="3" placeholder="今夜讀到哪一句震撼的話？在書店遇見了什麼故事？" class="w-full bg-white border border-nordic-border rounded-xl p-3 text-xs focus:outline-none"></textarea>
+          <div class="flex justify-end">
+            <button @click="addPost" class="bg-nordic-dark text-white text-xs px-4 py-1.5 rounded-lg font-medium">發布隨筆</button>
+          </div>
+        </div>
+
+        <!-- 隨筆文章列表 -->
+        <div class="divide-y divide-sand-100">
+          <div v-for="post in posts" :key="post.id" class="py-4 space-y-1.5">
+            <div class="flex items-center justify-between text-[11px] text-nordic-muted">
+              <span>{{ post.date }}</span>
+              <button @click="deletePost(post.id)" class="text-gray-300 hover:text-red-500">✕</button>
+            </div>
+            <h4 class="font-serif-title font-bold text-base text-nordic-dark">{{ post.title }}</h4>
+            <p class="text-xs text-nordic-slate whitespace-pre-line leading-relaxed font-serif-title">{{ post.content }}</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 相機掃碼 Modal 彈窗 -->
+    <div v-if="isScanning" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4 text-center">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-nordic-dark text-sm flex items-center gap-2">
+            <span>📷</span> 對準書本背面 ISBN 條碼
+          </h3>
+          <button @click="stopScanner" class="text-gray-400 hover:text-nordic-dark text-base">✕</button>
+        </div>
+        <div id="reader" class="overflow-hidden rounded-xl bg-black min-h-[220px]"></div>
+        <p class="text-[11px] text-nordic-muted">對準條碼，辨識後自動帶入書名、作者與出版社</p>
+        <button @click="stopScanner" class="w-full bg-sand-100 hover:bg-sand-200 text-nordic-slate text-xs py-2 rounded-lg font-medium transition">
+          取消掃描
+        </button>
+      </div>
     </div>
 
-    <!-- 頁尾署名 -->
-    <footer class="mt-8 md:mt-12 text-center text-xs tracking-widest text-nordic-muted/80 font-medium pb-8 uppercase">
-      MUBONE STUDIO
+    <!-- 頁尾署名與工具 -->
+    <footer class="mt-8 text-center text-xs tracking-widest text-nordic-muted/80 font-medium pb-8 uppercase space-y-2">
+      <div class="flex justify-center items-center gap-3 text-[11px] normal-case">
+        <button @click="exportData" class="hover:text-nordic-dark">↓ 備份全部 JSON</button>
+        <span>•</span>
+        <label class="hover:text-nordic-dark cursor-pointer">
+          ↑ 匯入 JSON
+          <input type="file" @change="importData" class="hidden" accept=".json" />
+        </label>
+        <span>•</span>
+        <button @click="resetToDefault" class="hover:text-red-500">重置初始</button>
+      </div>
+      <div>MUBONE STUDIO · 長衫客書坊</div>
     </footer>
 
   </div>
@@ -346,10 +544,11 @@
     const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
     const LOCAL_KEY = 'mubone_bookshelf_jsonbin_v1';
     const CUSTOM_SOURCES_KEY = 'mubone_custom_sources';
+    const POSTS_KEY = 'mubone_study_posts';
 
     const BASE_SOURCES = [
       '台中墊腳石', '台南墊腳石', '台中茉莉二手書店', '台南珍寶書坊',
-      '大遠百誠品', '台中中友百貨誠品', '誠品線上', '博客來(線上)',
+      '大遠百誠品', '台中中友百貨誠品', '虎尾誠品', '誠品線上', '博客來(線上)',
       '讀冊(線上)', '書寶(線上)', '蝦皮', '雲林建忠書店',
       '雲林田納西書店', '麗寶金石堂', '電子書', '舅舅贈送', '學弟贈送', 'Mick贈送'
     ];
@@ -434,7 +633,7 @@
       {"id": 77, "title": "自己的看法讀古文談寫作", "author": "凌性傑", "publisher": "麥田", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀"},
       {"id": 78, "title": "銀翼殺手", "author": "菲利普 狄克", "publisher": "寂寞出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀"},
       {"id": 79, "title": "半憂鬱: 給能工作, 能生活, 內心卻動彈不得的你", "author": "平光源", "publisher": "如何出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢"},
-      {"id": 80, "title": "想我苦哈哈的一生", "author": "詹姆斯瑟伯", "publisher": "逗點文創社", "type": "新", "location": "在家", "source": "誠品線上", "閱讀完畢": "閱讀完畢"},
+      {"id": 80, "title": "想我苦哈哈的一生", "author": "詹姆斯瑟伯", "publisher": "逗點文創社", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢"},
       {"id": 81, "title": "華氏451度 圖像小說", "author": " 雷．布萊伯利, 提姆．漢彌爾頓", "publisher": "麥田", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "閱讀完畢"},
       {"id": 82, "title": "那本書是", "author": " 又吉直樹, 吉竹伸介", "publisher": "皇冠", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "閱讀完畢"},
       {"id": 83, "title": "四維街一號", "author": "楊双子", "publisher": "春山出版", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "未讀"},
@@ -445,10 +644,27 @@
       {"id": 88, "title": "斜陽", "author": "太宰治", "publisher": "野人文化", "type": "新", "location": "在家", "source": "台中墊腳石", "readingStatus": "未讀"}
     ];
 
+    const INITIAL_POSTS = [
+      {
+        id: 1,
+        title: "讀書人的事，能算偷麼？",
+        date: "2026.09.14",
+        content: "長衫客書坊今日重新梳理落成。將家中與租屋處的書籍一併登錄，八十八冊文字有了去處，心裡也跟著踏實許多。"
+      }
+    ];
+
     const { createApp, ref, computed, onMounted } = Vue;
 
     createApp({
       setup() {
+        const currentTab = ref('home');
+        const showDashboard = ref(false);
+        const isSaving = ref(false);
+        const hasUnsavedChanges = ref(false);
+        const syncState = ref('synced');
+        const isScanning = ref(false);
+        let html5QrCode = null;
+
         const getInitialBooks = () => {
           const saved = localStorage.getItem(LOCAL_KEY);
           if (saved) {
@@ -464,13 +680,19 @@
         const filterLocation = ref('all');
         const filterRead = ref('all');
         const searchQuery = ref('');
-        const showDashboard = ref(true);
 
-        const isSaving = ref(false);
-        const hasUnsavedChanges = ref(false);
-        const syncState = ref('synced');
+        // 隨筆部落格
+        const posts = ref([]);
+        try {
+          const savedPosts = localStorage.getItem(POSTS_KEY);
+          posts.value = savedPosts ? JSON.parse(savedPosts) : INITIAL_POSTS;
+        } catch (e) {
+          posts.value = INITIAL_POSTS;
+        }
 
-        // 自訂出處清單持久化
+        const showNewPost = ref(false);
+        const newPost = ref({ title: '', content: '' });
+
         const customSources = ref([]);
         try {
           const savedSources = localStorage.getItem(CUSTOM_SOURCES_KEY);
@@ -495,9 +717,22 @@
           readingStatus: '未讀'
         });
 
+        // 統計資訊
+        const ownedBooks = computed(() => books.value.filter(b => b.location !== '願望待購' && b.location !== '售出'));
+        const wishlistBooks = computed(() => books.value.filter(b => b.location === '願望待購'));
+        const currentlyReadingBooks = computed(() => ownedBooks.value.filter(b => b.readingStatus === '閱讀中'));
+
+        const tabs = computed(() => [
+          { id: 'home', label: '首頁', icon: '🏠' },
+          { id: 'archive', label: '藏書縱覽', icon: '📚' },
+          { id: 'wishlist', label: '願望清單', icon: '🔖', badge: wishlistBooks.value.length || null },
+          { id: 'add', label: '新增 / 掃描', icon: '➕' },
+          { id: 'blog', label: '書房手札', icon: '✍️' }
+        ]);
+
         const locationFilters = [
           { label: '全部', val: 'all' },
-          { label: '在家', val: '在家' },
+          { label: '老家', val: '在家' },
           { label: '租屋處', val: '在租屋處' },
           { label: '售出', val: '售出' }
         ];
@@ -513,7 +748,7 @@
           if (isSaving.value) return '極速儲存中...';
           if (hasUnsavedChanges.value) return '有未儲存變更';
           if (syncState.value === 'connecting') return '雲端同步中...';
-          if (syncState.value === 'synced') return '極速雲端同步完成';
+          if (syncState.value === 'synced') return '極速同步完成';
           return '本機離線模式';
         });
 
@@ -543,7 +778,6 @@
               saveToCloud(true);
             }
           } catch (e) {
-            console.warn('雲端連線異常，維持本機快取');
             syncState.value = 'offline';
           }
         };
@@ -625,6 +859,95 @@
           }
         };
 
+        const markAsFinished = (id) => {
+          updateBookField(id, 'readingStatus', '閱讀完畢');
+          alert('恭喜又讀完一本書！已更新閱讀進度。');
+        };
+
+        const moveToOwned = (book, location) => {
+          updateBookField(book.id, 'location', location);
+          alert(`✓ 《${book.title}》已入庫至「${location}」！`);
+        };
+
+        // ISBN 查詢 API
+        const fetchBookByISBN = async (isbn) => {
+          try {
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+            const data = await res.json();
+            if (data.totalItems > 0) {
+              const info = data.items[0].volumeInfo;
+              newBook.value.title = info.title || '';
+              newBook.value.author = (info.authors && info.authors.join(', ')) || '';
+              newBook.value.publisher = info.publisher || '';
+              alert(`✓ 成功帶入書籍：${newBook.value.title}`);
+            } else {
+              alert(`找到 ISBN：${isbn}，但資料庫無詳細資訊，請手動輸入書名。`);
+            }
+          } catch (e) {
+            alert(`掃描到 ISBN：${isbn}，聯網查詢失敗，請手動輸入。`);
+          }
+        };
+
+        // 相機條碼掃描
+        const startScanner = () => {
+          isScanning.value = true;
+          setTimeout(() => {
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 160 } };
+            html5QrCode.start(
+              { facingMode: "environment" },
+              config,
+              (decodedText) => {
+                stopScanner();
+                fetchBookByISBN(decodedText.trim());
+              },
+              (errorMessage) => {}
+            ).catch(err => {
+              alert('無法啟用相機，請確認瀏覽器相機權限已開啟');
+              isScanning.value = false;
+            });
+          }, 200);
+        };
+
+        const stopScanner = () => {
+          if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+              html5QrCode.clear();
+              isScanning.value = false;
+            }).catch(() => {
+              isScanning.value = false;
+            });
+          } else {
+            isScanning.value = false;
+          }
+        };
+
+        // 隨筆功能
+        const addPost = () => {
+          if (!newPost.value.title || !newPost.value.content) {
+            alert('請填寫標題與內容');
+            return;
+          }
+          const today = new Date();
+          const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+          posts.value.unshift({
+            id: Date.now(),
+            title: newPost.value.title,
+            content: newPost.value.content,
+            date: dateStr
+          });
+          localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
+          newPost.value = { title: '', content: '' };
+          showNewPost.value = false;
+        };
+
+        const deletePost = (id) => {
+          if (confirm('確定刪除這篇隨筆嗎？')) {
+            posts.value = posts.value.filter(p => p.id !== id);
+            localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
+          }
+        };
+
         onMounted(() => {
           fetchFromCloud();
         });
@@ -649,6 +972,9 @@
           hasUnsavedChanges.value = true;
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
 
+          const targetTab = newBook.value.location === '願望待購' ? 'wishlist' : 'archive';
+          alert(`✓ 成功收錄《${newBook.value.title}》！請記得點擊右上角「💾 儲存」備份至雲端。`);
+
           newBook.value = {
             title: '',
             author: '',
@@ -658,6 +984,7 @@
             type: '新',
             readingStatus: '未讀'
           };
+          currentTab.value = targetTab;
         };
 
         const deleteBook = (id) => {
@@ -671,6 +998,7 @@
         const getLocationBadgeStyle = (loc) => {
           if (loc === '在租屋處') return 'bg-[#ECE7DE] text-[#6B5A46]';
           if (loc === '在家') return 'bg-[#EBF1EA] text-[#486345]';
+          if (loc === '願望待購') return 'bg-purple-100 text-purple-700 font-semibold';
           if (loc === '售出') return 'bg-gray-100 text-gray-400';
           return 'bg-sand-100 text-nordic-slate';
         };
@@ -681,8 +1009,8 @@
           return 'bg-sand-100 text-nordic-muted';
         };
 
-        const filteredBooks = computed(() => {
-          return books.value.filter(b => {
+        const filteredOwnedBooks = computed(() => {
+          return ownedBooks.value.filter(b => {
             const matchLoc = filterLocation.value === 'all' || b.location === filterLocation.value;
             const matchRead = filterRead.value === 'all' || b.readingStatus === filterRead.value;
 
@@ -698,23 +1026,25 @@
         });
 
         const stats = computed(() => ({
-          finished: books.value.filter(b => b.readingStatus === '閱讀完畢').length,
-          reading: books.value.filter(b => b.readingStatus === '閱讀中').length,
-          unread: books.value.filter(b => b.readingStatus === '未讀').length,
+          totalOwned: ownedBooks.value.length,
+          finished: ownedBooks.value.filter(b => b.readingStatus === '閱讀完畢').length,
+          reading: ownedBooks.value.filter(b => b.readingStatus === '閱讀中').length,
+          unread: ownedBooks.value.filter(b => b.readingStatus === '未讀').length,
           home: books.value.filter(b => b.location === '在家').length,
           rental: books.value.filter(b => b.location === '在租屋處').length,
+          wishlist: wishlistBooks.value.length,
           sold: books.value.filter(b => b.location === '售出').length
         }));
 
         const analytics = computed(() => {
-          const total = books.value.length || 1;
+          const total = stats.value.totalOwned || 1;
           const finished = stats.value.finished;
           const reading = stats.value.reading;
-          const newBooks = books.value.filter(b => b.type === '新').length;
-          const usedBooks = books.value.filter(b => b.type === '二手').length;
+          const newBooks = ownedBooks.value.filter(b => b.type === '新').length;
+          const usedBooks = ownedBooks.value.filter(b => b.type === '二手').length;
 
           const authorMap = {};
-          books.value.forEach(b => {
+          ownedBooks.value.forEach(b => {
             if (b.author) authorMap[b.author] = (authorMap[b.author] || 0) + 1;
           });
           const topAuthors = Object.entries(authorMap)
@@ -723,7 +1053,7 @@
             .slice(0, 5);
 
           const pubMap = {};
-          books.value.forEach(b => {
+          ownedBooks.value.forEach(b => {
             if (b.publisher) pubMap[b.publisher] = (pubMap[b.publisher] || 0) + 1;
           });
           const topPublishers = Object.entries(pubMap)
@@ -732,7 +1062,7 @@
             .slice(0, 5);
 
           const srcMap = {};
-          books.value.forEach(b => {
+          ownedBooks.value.forEach(b => {
             if (b.source) srcMap[b.source] = (srcMap[b.source] || 0) + 1;
           });
           const topSources = Object.entries(srcMap)
@@ -771,7 +1101,7 @@
               books.value = JSON.parse(event.target.result);
               hasUnsavedChanges.value = true;
               localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
-              alert('匯入成功！請點擊「💾 儲存變更」以極速寫入雲端。');
+              alert('匯入成功！請點擊「💾 儲存」極速寫入雲端。');
             } catch (err) {
               alert('JSON 格式錯誤，請確認檔案內容');
             }
@@ -788,11 +1118,15 @@
         };
 
         return {
-          books, newBook, filterLocation, filterRead, searchQuery,
+          currentTab, tabs, books, newBook, filterLocation, filterRead, searchQuery,
           showDashboard, allSourceOptions, locationFilters, readFilters,
-          filteredBooks, stats, analytics, syncState, syncStatusText, syncStatusClass,
+          filteredOwnedBooks, wishlistBooks, currentlyReadingBooks, stats, analytics,
+          posts, showNewPost, newPost, addPost, deletePost,
+          syncState, syncStatusText, syncStatusClass,
           isSaving, hasUnsavedChanges, saveToCloud,
-          formatIndex, addBook, deleteBook, updateBookField, getLocationBadgeStyle, getReadingStatusStyle,
+          isScanning, startScanner, stopScanner,
+          formatIndex, addBook, deleteBook, updateBookField, markAsFinished, moveToOwned,
+          getLocationBadgeStyle, getReadingStatusStyle,
           handleSourceSelect, handleNewBookSourceSelect,
           fetchFromCloud, exportData, importData, resetToDefault
         };
