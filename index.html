@@ -695,7 +695,6 @@
         const manualIsbn = ref('');
         let html5QrCode = null;
 
-        // 本地快取 Map
         const isbnCache = new Map();
 
         const showAddWish = ref(false);
@@ -923,7 +922,7 @@
           alert('恭喜又讀完一本書！已更新閱讀進度。');
         };
 
-        // 雙資料庫極速查詢與本地快取
+        // 雙資料庫極速查詢（強制台灣繁體中文優先 + 快取）
         const fetchBookByISBN = async (isbn) => {
           const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
           if (!cleanIsbn) return;
@@ -933,29 +932,34 @@
             newBook.value.title = cached.title;
             newBook.value.author = cached.author;
             newBook.value.publisher = cached.publisher;
-            alert(`✓ [快取秒開] 成功帶入書籍：${cached.title}`);
+            alert(`✓ [快取秒開] 成功帶入繁體書籍：${cached.title}`);
             return;
           }
 
+          // 1. 強制要求繁體中文（hl=zh-TW, country=TW）
           const fetchGoogle = async () => {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2000);
-            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`, {
-              signal: controller.signal
-            });
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&hl=zh-TW&country=TW`;
+            const res = await fetch(url, { signal: controller.signal });
             clearTimeout(timeoutId);
             const data = await res.json();
-            if (data.totalItems > 0) {
-              const info = data.items[0].volumeInfo;
+            
+            if (data.totalItems > 0 && data.items && data.items.length > 0) {
+              // 優先挑選具有繁體中文編目的項目
+              const item = data.items.find(it => it.volumeInfo && (it.volumeInfo.language === 'zh-TW' || it.volumeInfo.language === 'zh')) || data.items[0];
+              const info = item.volumeInfo;
+
               return {
                 title: info.title || '',
-                author: (info.authors && info.authors.join(', ')) || '',
+                author: (info.authors && info.authors.join('、')) || '',
                 publisher: info.publisher || ''
               };
             }
-            throw new Error('Google Books 查無資料');
+            throw new Error('Google Books 查無繁中資料');
           };
 
+          // 2. 備援 Open Library
           const fetchOpenLibrary = async () => {
             const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&jscmd=data&format=json`);
             const data = await res.json();
@@ -963,7 +967,7 @@
             if (bookData) {
               return {
                 title: bookData.title || '',
-                author: (bookData.authors && bookData.authors.map(a => a.name).join(', ')) || '',
+                author: (bookData.authors && bookData.authors.map(a => a.name).join('、')) || '',
                 publisher: (bookData.publishers && bookData.publishers[0]?.name) || ''
               };
             }
@@ -983,12 +987,12 @@
               newBook.value.author = result.author;
               newBook.value.publisher = result.publisher;
               isbnCache.set(cleanIsbn, result);
-              alert(`✓ 成功帶入書籍：${result.title}`);
+              alert(`✓ 成功帶入繁體中文書籍：\n《${result.title}》\n作者：${result.author || '未提供'}`);
             } else {
-              alert(`已辨識 ISBN：${cleanIsbn}，線上資料庫暫無收錄，請手動補齊書名。`);
+              alert(`已辨識 ISBN：${cleanIsbn}，線上資料庫暫無完整繁中資料，請手動補齊書名。`);
             }
           } catch (err) {
-            alert(`已辨識 ISBN：${cleanIsbn}，線上資料庫暫無收錄，請手動輸入書名。`);
+            alert(`已辨識 ISBN：${cleanIsbn}，查詢失敗，請手動輸入書名。`);
           }
         };
 
