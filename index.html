@@ -127,8 +127,11 @@
           <button @click="currentTab = 'archive'" class="bg-nordic-dark hover:bg-nordic-slate text-white px-5 py-2.5 rounded-xl shadow-sm transition">
             📖 瀏覽藏書縱覽
           </button>
+          <button @click="currentTab = 'wishlist'" class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-5 py-2.5 rounded-xl transition">
+            🔖 查看願望清單
+          </button>
           <button @click="currentTab = 'add'" class="bg-sand-100 hover:bg-sand-200 text-nordic-dark px-5 py-2.5 rounded-xl transition">
-            📷 掃描 / 新增書籍
+            📷 條碼掃描入庫
           </button>
         </div>
       </section>
@@ -325,7 +328,7 @@
                     class="text-xs font-medium rounded-lg px-2 py-1.5 border border-transparent focus:outline-none transition cursor-pointer">
               <option value="在家">📍 老家</option>
               <option value="在租屋處">🏢 租屋處</option>
-              <option value="願望待購">🔖 轉入願望清單</option>
+              <option value="願望待購">🔖 移至願望清單</option>
               <option value="售出">🏷️ 售出</option>
             </select>
 
@@ -337,23 +340,41 @@
       </div>
     </main>
 
-    <!-- ==================== 分頁 3：願望清單 (Wishlist) ==================== -->
+    <!-- ==================== 分頁 3：願望清單 (Wishlist - 完全獨立運作) ==================== -->
     <main v-if="currentTab === 'wishlist'" class="space-y-4 animate-fadeIn">
       <div class="bg-purple-50/70 rounded-2xl p-4 sm:p-5 border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 class="font-serif-title font-bold text-lg text-purple-950 flex items-center gap-2">
             <span>🔖</span> 待購書單 · Wishlist
           </h3>
-          <p class="text-xs text-purple-700/80 mt-0.5">逛書店時的心動名單。買下後一鍵「入庫」，立即歸檔到實體書架。</p>
+          <p class="text-xs text-purple-700/80 mt-0.5">逛書店、二手書攤時的心動名單。買下後點選地點即可一秒正式入庫。</p>
         </div>
-        <button @click="currentTab = 'add'; newBook.location = '願望待購'" class="bg-purple-700 hover:bg-purple-800 text-white text-xs px-3.5 py-2 rounded-xl shadow-sm transition self-start sm:self-auto">
-          + 加入願望書目
+        <button @click="showAddWish = !showAddWish" 
+                class="bg-purple-700 hover:bg-purple-800 text-white text-xs px-3.5 py-2 rounded-xl shadow-sm transition self-start sm:self-auto font-medium flex items-center gap-1.5">
+          <span>{{ showAddWish ? '✕ 關閉' : '＋ 隨手記下想買的書' }}</span>
         </button>
       </div>
 
+      <!-- 願望清單專屬快速輸入欄 (不跳轉、不繁瑣) -->
+      <div v-if="showAddWish" class="bg-white p-4 rounded-2xl border border-purple-200 shadow-sm space-y-3">
+        <div class="text-xs font-bold text-purple-900">記下想買的書：</div>
+        <form @submit.prevent="addWishItem" class="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
+          <input v-model.trim="newWish.title" placeholder="想買的書名 *" required
+                 class="w-full sm:flex-1 bg-purple-50/40 border border-purple-200 rounded-xl px-3 py-2 text-xs text-nordic-dark focus:outline-none focus:bg-white focus:ring-1 focus:ring-purple-600 transition" />
+          <input v-model.trim="newWish.author" placeholder="作者（選填）"
+                 class="w-full sm:w-48 bg-purple-50/40 border border-purple-200 rounded-xl px-3 py-2 text-xs text-nordic-dark focus:outline-none focus:bg-white focus:ring-1 focus:ring-purple-600 transition" />
+          <input v-model.trim="newWish.note" placeholder="備註（例：想找二手、虎尾誠品看到）"
+                 class="w-full sm:w-56 bg-purple-50/40 border border-purple-200 rounded-xl px-3 py-2 text-xs text-nordic-dark focus:outline-none focus:bg-white focus:ring-1 focus:ring-purple-600 transition" />
+          <button type="submit" class="w-full sm:w-auto bg-purple-700 hover:bg-purple-800 text-white text-xs px-4 py-2 rounded-xl font-medium transition flex-shrink-0">
+            加入清單
+          </button>
+        </form>
+      </div>
+
+      <!-- 願望清單列表 -->
       <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
         <div v-if="wishlistBooks.length === 0" class="py-12 text-center text-nordic-muted text-xs">
-          目前願望清單空空如也，逛書店時隨時加進來吧！
+          目前願望清單空空如也，逛書店時隨時記下來吧！
         </div>
 
         <div v-for="(b, idx) in wishlistBooks" :key="b.id" 
@@ -362,7 +383,12 @@
             <span class="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md mt-0.5">#{{ idx + 1 }}</span>
             <div>
               <h4 class="font-serif-title font-semibold text-base text-nordic-dark">{{ b.title }}</h4>
-              <p class="text-xs text-nordic-muted mt-0.5">{{ b.author || '未記錄作者' }} <span v-if="b.publisher">/ {{ b.publisher }}</span></p>
+              <p class="text-xs text-nordic-muted mt-0.5">
+                <span v-if="b.author">{{ b.author }}</span>
+                <span v-if="b.publisher" class="text-gray-300 mx-1">•</span>
+                <span v-if="b.publisher">{{ b.publisher }}</span>
+                <span v-if="b.source" class="ml-2 text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded text-[11px]">{{ b.source }}</span>
+              </p>
             </div>
           </div>
 
@@ -381,13 +407,13 @@
       </div>
     </main>
 
-    <!-- ==================== 分頁 4：新增書籍 & 條碼查詢 (Add & Scan) ==================== -->
+    <!-- ==================== 分頁 4：正式新書入藏 & 條碼掃描 (Add & Scan) ==================== -->
     <main v-if="currentTab === 'add'" class="space-y-6 animate-fadeIn">
       <section class="bg-white rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-sand-100 gap-3">
           <div>
-            <h3 class="font-serif-title font-bold text-xl text-nordic-dark">新書入藏登記</h3>
-            <p class="text-xs text-nordic-muted mt-1">支援相機掃描條碼，或直接輸入 13 碼 ISBN 自動帶入書籍資訊</p>
+            <h3 class="font-serif-title font-bold text-xl text-nordic-dark">正式藏書登記</h3>
+            <p class="text-xs text-nordic-muted mt-1">登記已購入的實體書，支援掃描條碼或手動輸入詳細出版資訊</p>
           </div>
           <button @click="startScanner" type="button" 
                   class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-4 py-2.5 rounded-xl shadow-sm font-medium transition flex items-center gap-2 self-start sm:self-auto cursor-pointer">
@@ -395,7 +421,7 @@
           </button>
         </div>
 
-        <!-- 備用快捷：手動輸入 ISBN 查詢 -->
+        <!-- 手動輸入 ISBN 查詢 -->
         <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70 flex flex-col sm:flex-row items-center gap-2">
           <span class="text-xs font-semibold text-nordic-slate flex-shrink-0">🔢 手打 ISBN 查書：</span>
           <input v-model.trim="manualIsbn" placeholder="輸入 13 碼 ISBN（例如：978986...）" 
@@ -427,11 +453,10 @@
 
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
             <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">存放位置 / 清單</label>
+              <label class="block text-xs font-semibold text-nordic-slate mb-1">存放位置</label>
               <select v-model="newBook.location" class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer">
                 <option value="在家">📍 老家</option>
                 <option value="在租屋處">🏢 租屋處</option>
-                <option value="願望待購">🔖 願望清單 (待購)</option>
                 <option value="售出">🏷️ 售出</option>
               </select>
             </div>
@@ -637,7 +662,7 @@
       {"id": 77, "title": "自己的看法讀古文談寫作", "author": "凌性傑", "publisher": "麥田", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀"},
       {"id": 78, "title": "銀翼殺手", "author": "菲利普 狄克", "publisher": "寂寞出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "未讀"},
       {"id": 79, "title": "半憂鬱: 給能工作, 能生活, 內心卻動彈不得的你", "author": "平光源", "publisher": "如何出版", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢"},
-      {"id": 80, "title": "想我苦哈哈的一生", "author": "詹姆斯瑟伯", "publisher": "逗點文創社", "type": "新", "location": "在家", "source": "誠品線上", "readingStatus": "閱讀完畢"},
+      {"id": 80, "title": "想我苦哈哈的一生", "author": "詹姆斯瑟伯", "publisher": "逗點文創社", "type": "新", "location": "在家", "source": "誠品線上", "閱讀完畢": "閱讀完畢"},
       {"id": 81, "title": "華氏451度 圖像小說", "author": " 雷．布萊伯利, 提姆．漢彌爾頓", "publisher": "麥田", "type": "新", "location": "在家", "source": "大遠百誠品", "readingStatus": "閱讀完畢"},
       {"id": 82, "title": "那本書是", "author": " 又吉直樹, 吉竹伸介", "publisher": "皇冠", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "閱讀完畢"},
       {"id": 83, "title": "四維街一號", "author": "楊双子", "publisher": "春山出版", "type": "新", "location": "在家", "source": "台中中友百貨誠品", "readingStatus": "未讀"},
@@ -669,6 +694,10 @@
         const isScanning = ref(false);
         const manualIsbn = ref('');
         let html5QrCode = null;
+
+        // 願望清單專屬快速新增開關與物件
+        const showAddWish = ref(false);
+        const newWish = ref({ title: '', author: '', note: '' });
 
         const getInitialBooks = () => {
           const saved = localStorage.getItem(LOCAL_KEY);
@@ -711,6 +740,7 @@
           return Array.from(set);
         });
 
+        // 正式新書登記物件
         const newBook = ref({
           title: '',
           author: '',
@@ -729,7 +759,7 @@
           { id: 'home', label: '首頁', icon: '🏠' },
           { id: 'archive', label: '藏書縱覽', icon: '📚' },
           { id: 'wishlist', label: '願望清單', icon: '🔖', badge: wishlistBooks.value.length || null },
-          { id: 'add', label: '新增 / 掃描', icon: '➕' },
+          { id: 'add', label: '新書入藏', icon: '➕' },
           { id: 'blog', label: '書房手札', icon: '✍️' }
         ]);
 
@@ -818,6 +848,32 @@
           }
         };
 
+        // 願望清單專屬：極簡新增函式（不跳轉）
+        const addWishItem = () => {
+          if (!newWish.value.title) return;
+          books.value.unshift({
+            id: Date.now(),
+            title: newWish.value.title,
+            author: newWish.value.author || '',
+            publisher: '',
+            source: newWish.value.note || '',
+            location: '願望待購',
+            type: '新',
+            readingStatus: '未讀'
+          });
+
+          hasUnsavedChanges.value = true;
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
+          alert(`✓ 已加入願望清單：《${newWish.value.title}》！`);
+          newWish.value = { title: '', author: '', note: '' };
+          showAddWish.value = false;
+        };
+
+        const moveToOwned = (book, location) => {
+          updateBookField(book.id, 'location', location);
+          alert(`✓ 恭喜入手！《${book.title}》已入庫至「${location}」，並移入藏書縱覽。`);
+        };
+
         const registerNewSource = (val) => {
           if (!val) return;
           const trimmed = val.trim();
@@ -867,11 +923,6 @@
           alert('恭喜又讀完一本書！已更新閱讀進度。');
         };
 
-        const moveToOwned = (book, location) => {
-          updateBookField(book.id, 'location', location);
-          alert(`✓ 《${book.title}》已入庫至「${location}」！`);
-        };
-
         const fetchBookByISBN = async (isbn) => {
           const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
           try {
@@ -899,7 +950,6 @@
           fetchBookByISBN(manualIsbn.value);
         };
 
-        // 平板 Chrome 高容錯鏡頭啟動
         const startScanner = async () => {
           isScanning.value = true;
           await Vue.nextTick();
@@ -911,7 +961,6 @@
               
               let cameraIdOrConfig = { facingMode: "environment" };
               if (devices && devices.length > 0) {
-                // 優先選擇後置相機 (back camera)
                 const backCam = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('後'));
                 cameraIdOrConfig = backCam ? backCam.id : devices[devices.length - 1].id;
               }
@@ -927,7 +976,7 @@
                 (errorMessage) => {}
               );
             } catch (err) {
-              alert('相機啟用失敗。請確認：\n1. 網址列左側圖示已允許相機\n2. 平板系統設定已授權 Chrome 使用相機\n（您也可以直接在輸入框手打 ISBN 查詢）');
+              alert('相機啟用失敗。請確認：\n1. 網址列已允許相機\n2. 系統已授權 Chrome 使用相機\n（您也可以直接在輸入框手打 ISBN 查詢）');
               isScanning.value = false;
             }
           }, 250);
@@ -977,6 +1026,7 @@
 
         const formatIndex = (num) => num < 10 ? `0${num}` : `${num}`;
 
+        // 正式新增實體書籍
         const addBook = () => {
           if (!newBook.value.title) return;
           if (newBook.value.source) registerNewSource(newBook.value.source);
@@ -995,8 +1045,7 @@
           hasUnsavedChanges.value = true;
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
 
-          const targetTab = newBook.value.location === '願望待購' ? 'wishlist' : 'archive';
-          alert(`✓ 成功收錄《${newBook.value.title}》！請記得點擊右上角「💾 儲存」備份至雲端。`);
+          alert(`✓ 成功收錄《${newBook.value.title}》至藏書縱覽！請記得點擊右上角「💾 儲存」備份。`);
 
           newBook.value = {
             title: '',
@@ -1008,7 +1057,7 @@
             readingStatus: '未讀'
           };
           manualIsbn.value = '';
-          currentTab.value = targetTab;
+          currentTab.value = 'archive';
         };
 
         const deleteBook = (id) => {
@@ -1146,6 +1195,7 @@
           showDashboard, allSourceOptions, locationFilters, readFilters,
           filteredOwnedBooks, wishlistBooks, currentlyReadingBooks, stats, analytics,
           posts, showNewPost, newPost, addPost, deletePost,
+          showAddWish, newWish, addWishItem,
           syncState, syncStatusText, syncStatusClass,
           isSaving, hasUnsavedChanges, saveToCloud,
           isScanning, manualIsbn, lookupManualIsbn, startScanner, stopScanner,
