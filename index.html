@@ -47,7 +47,7 @@
     #reader video { border-radius: 12px; }
   </style>
 </head>
-<body class="min-h-screen py-6 md:py-10 px-3 sm:px-6 md:px-8 pb-24">
+<body class="min-h-screen py-6 md:py-10 px-3 sm:px-6 md:px-8 pb-28">
   <div id="app" class="max-w-4xl mx-auto">
     
     <!-- 頂部導航列與狀態 -->
@@ -79,7 +79,7 @@
       </div>
     </header>
 
-    <!-- 功能 1：右下角「浮動儲存按鍵」膠囊 -->
+    <!-- 右下角浮動儲存按鍵 -->
     <aside class="fixed bottom-6 right-6 z-40">
       <button @click="saveToCloud" 
               :disabled="isSaving"
@@ -93,7 +93,7 @@
       </button>
     </aside>
 
-    <!-- 分頁 1：首頁 (Landing Page) -->
+    <!-- ==================== 分頁 1：首頁 (Landing Page) ==================== -->
     <main v-if="currentTab === 'home'" class="space-y-8 animate-fadeIn">
       <section class="bg-white rounded-3xl p-6 sm:p-10 border border-nordic-border shadow-sm text-center relative overflow-hidden">
         <div class="max-w-xl mx-auto space-y-3">
@@ -134,7 +134,7 @@
             📖 瀏覽藏書縱覽
           </button>
           <button @click="currentTab = 'library'" class="bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 px-5 py-2.5 rounded-xl transition">
-            🏛️ 圖書館專區 ({{ activeLoans.length }} 借閱中)
+            🏛️ 圖書館專區 ({{ activeLoans.length }} 冊借閱中)
           </button>
           <button @click="currentTab = 'wishlist'" class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-5 py-2.5 rounded-xl transition">
             🔖 願望清單
@@ -178,7 +178,7 @@
       </section>
     </main>
 
-    <!-- 分頁 2：藏書縱覽 (Archive) -->
+    <!-- ==================== 分頁 2：藏書縱覽 (Archive) ==================== -->
     <main v-if="currentTab === 'archive'" class="space-y-4 animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-1.5 text-xs">
@@ -324,68 +324,55 @@
       </div>
     </main>
 
-    <!-- ==================== 分頁 3：圖書館專區 (借閱中 & 歸還歷史 兩大獨立 Section + 學費回本儀表板) ==================== -->
+    <!-- ==================== 分頁 3：圖書館專區 (借閱中 & 歸還歷史 & 學費回本分析) ==================== -->
     <main v-if="currentTab === 'library'" class="space-y-6 animate-fadeIn">
       
-      <!-- 頂部學費回本與借閱儀表板 -->
-      <section class="bg-white rounded-3xl p-5 sm:p-7 border border-nordic-border shadow-sm space-y-5">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-sand-100 pb-4">
-          <div>
-            <span class="text-[10px] tracking-widest uppercase font-semibold text-blue-800">Library Tuition ROI</span>
-            <h3 class="font-serif-title font-bold text-2xl text-nordic-dark mt-0.5 flex items-center gap-2">
-              <span>🏛️</span> 圖書館借閱與學費回本統計
-            </h3>
-            <p class="text-xs text-nordic-muted mt-1">
-              以每學期學費 NT$ 20,000 計算，累計借閱為你換算等值知識資產
-            </p>
-          </div>
-
-          <button @click="showAddLib = !showAddLib" 
-                  class="bg-blue-900 hover:bg-blue-950 text-white text-xs px-4 py-2.5 rounded-xl shadow-sm transition font-medium flex items-center gap-1.5 self-start sm:self-auto">
-            <span>{{ showAddLib ? '✕ 關閉登記' : '＋ 登記借閱新書' }}</span>
-          </button>
-        </div>
-
-        <!-- 學費回本指標卡 -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-100">
-            <div class="text-[11px] text-emerald-800 font-medium">💰 換算購買總市價</div>
-            <div class="text-2xl font-bold text-emerald-950 mt-1 font-mono">
-              NT$ {{ libStats.totalSavedValue.toLocaleString() }}
+      <!-- 學費回本 & 借閱統計看板 -->
+      <section class="bg-gradient-to-br from-blue-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md relative overflow-hidden">
+        <div class="relative z-10 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span class="text-[11px] tracking-widest uppercase font-semibold text-blue-200/90">YunTech Library ROI Analytics</span>
+              <h3 class="font-serif-title font-bold text-2xl sm:text-3xl mt-0.5">圖書館閱讀資產與學費回本估算</h3>
             </div>
-            <div class="text-[10px] text-emerald-700/80 mt-1">累計借閱 {{ libraryRecords.length }} 冊圖書實體估值</div>
+            <button @click="showAddLib = !showAddLib" 
+                    class="bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs px-4 py-2.5 rounded-xl transition font-medium flex items-center gap-1.5 self-start sm:self-auto backdrop-blur-sm">
+              <span>{{ showAddLib ? '✕ 關閉登記' : '＋ 登記新借書籍' }}</span>
+            </button>
           </div>
 
-          <div class="bg-blue-50/80 p-4 rounded-2xl border border-blue-100">
-            <div class="text-[11px] text-blue-800 font-medium">🎓 學費回本指數 (每學期2萬)</div>
-            <div class="text-2xl font-bold text-blue-950 mt-1 font-mono">
-              {{ libStats.roiPercent }}%
+          <!-- 關鍵指標 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div class="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-white/10">
+              <div class="text-[11px] text-blue-200">累計借閱</div>
+              <div class="text-2xl font-bold mt-1">{{ libraryRecords.length }} <span class="text-xs font-normal text-blue-200">冊</span></div>
+              <div class="text-[10px] text-blue-300/80 mt-1">{{ activeLoans.length }} 本翻閱中 · {{ returnedHistory.length }} 本已還</div>
             </div>
-            <div class="text-[10px] text-blue-700/80 mt-1">已相當於省下 {{ libStats.semesterEquivalent }} 個學期的學費！</div>
-          </div>
-
-          <div class="bg-amber-50/80 p-4 rounded-2xl border border-amber-100">
-            <div class="text-[11px] text-amber-800 font-medium">⏳ 現正租借狀況</div>
-            <div class="text-2xl font-bold text-amber-950 mt-1 font-mono">
-              {{ activeLoans.length }} <span class="text-xs font-normal text-amber-800">冊在手中</span>
+            <div class="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-white/10">
+              <div class="text-[11px] text-emerald-300">換算購書總估值</div>
+              <div class="text-2xl font-bold text-emerald-300 mt-1">${{ libStats.totalSavedValue.toLocaleString() }}</div>
+              <div class="text-[10px] text-emerald-200/80 mt-1">省下之實體購書金</div>
             </div>
-            <div class="text-[10px] text-amber-700/80 mt-1">已歸還歷史 {{ returnedHistory.length }} 冊</div>
+            <div class="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-white/10">
+              <div class="text-[11px] text-amber-300">學費回本率</div>
+              <div class="text-2xl font-bold text-amber-300 mt-1">{{ libStats.roiPercent }}%</div>
+              <div class="text-[10px] text-amber-200/80 mt-1">基準：每學期 $20,000</div>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-white/10">
+              <div class="text-[11px] text-blue-200">相當於抵銷</div>
+              <div class="text-2xl font-bold mt-1">{{ libStats.semesterEquivalent }} <span class="text-xs font-normal text-blue-200">個學期</span></div>
+              <div class="text-[10px] text-blue-300/80 mt-1">用知識把學費徹底讀回本</div>
+            </div>
           </div>
-        </div>
 
-        <!-- 借閱主題類型分析 -->
-        <div class="space-y-2 pt-2">
-          <h4 class="text-xs font-semibold text-nordic-slate flex items-center gap-1.5">
-            <span>📊</span> 借閱主題類型分佈 (Categories)
-          </h4>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            <div v-for="cat in libCategories" :key="cat.name" class="p-3 bg-sand-50/80 rounded-xl border border-sand-100">
-              <div class="flex justify-between items-center text-xs">
-                <span class="font-medium text-nordic-slate">{{ cat.icon }} {{ cat.name }}</span>
-                <span class="font-mono font-bold text-nordic-dark">{{ cat.count }} 冊 ({{ cat.percent }}%)</span>
-              </div>
-              <div class="w-full bg-sand-200 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div :style="{ width: cat.percent + '%' }" class="bg-blue-800 h-full transition-all"></div>
+          <!-- 借閱主題分佈 -->
+          <div class="pt-3 border-t border-white/10">
+            <div class="text-xs font-semibold text-blue-200 mb-2">📊 借閱領域偏好分佈：</div>
+            <div class="grid grid-cols-2 sm:grid-cols-6 gap-2">
+              <div v-for="cat in libCategories" :key="cat.name" class="bg-black/20 rounded-xl p-2.5 text-center">
+                <div class="text-base">{{ cat.icon }}</div>
+                <div class="text-[11px] font-medium text-white/90 mt-0.5 truncate">{{ cat.name }}</div>
+                <div class="text-xs font-bold text-blue-200 mt-0.5">{{ cat.count }}冊 <span class="text-[10px] text-white/60">({{ cat.percent }}%)</span></div>
               </div>
             </div>
           </div>
@@ -395,7 +382,7 @@
       <!-- 登記新借閱欄位 -->
       <div v-if="showAddLib" class="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
         <div class="text-xs font-bold text-blue-950 flex items-center gap-1.5">
-          <span>✍️</span> 登記新借書籍（支援可續借日與應還日）
+          <span>✍️</span> 登記新借書籍資訊
         </div>
         <form @submit.prevent="addLibraryRecord" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="sm:col-span-2">
@@ -438,16 +425,16 @@
         </form>
       </div>
 
-      <!-- ==================== 獨立 Section 1：現正租借中 (Active Loans) ==================== -->
+      <!-- 區塊 A：現正租借中 (On Loan) -->
       <section class="space-y-3">
         <div class="flex items-center justify-between border-b border-sand-200 pb-2">
           <h4 class="font-serif-title font-bold text-lg text-blue-950 flex items-center gap-2">
-            <span>📖</span> 現正租借中的書 · Active Loans
+            <span>📖</span> 現正租借中 · Active Loans
             <span class="text-xs bg-blue-100 text-blue-800 font-sans px-2.5 py-0.5 rounded-full font-bold">
               {{ activeLoans.length }} 冊
             </span>
           </h4>
-          <span class="text-xs text-nordic-muted font-sans">請留意應還日期與可續借期間</span>
+          <span class="text-xs text-nordic-muted">請留意應還日期與可續借區間</span>
         </div>
 
         <div v-if="activeLoans.length === 0" class="bg-white rounded-2xl p-8 text-center text-nordic-muted text-xs border border-nordic-border">
@@ -456,7 +443,7 @@
 
         <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div v-for="item in activeLoans" :key="item.id" 
-               class="bg-white rounded-2xl p-5 border-2 border-blue-200 shadow-sm flex flex-col justify-between hover:border-blue-400 transition space-y-3">
+               class="bg-white rounded-2xl p-4 sm:p-5 border border-blue-200 shadow-sm flex flex-col justify-between hover:border-blue-400 transition space-y-3">
             <div>
               <div class="flex items-center justify-between text-[11px] mb-2">
                 <span class="bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded-md">借閱中</span>
@@ -465,42 +452,41 @@
               <h5 class="font-serif-title font-bold text-base text-nordic-dark leading-snug">{{ item.title }}</h5>
               <p v-if="item.author" class="text-xs text-nordic-muted mt-1">{{ item.author }}</p>
 
-              <!-- 關鍵日程看板 -->
-              <div class="mt-3 p-3 bg-sand-50/90 rounded-xl space-y-2 text-[11px] border border-sand-100 font-sans">
+              <!-- 日程看板 -->
+              <div class="mt-3 p-3 bg-sand-50/90 rounded-xl space-y-1.5 text-xs border border-sand-100 font-sans">
                 <div class="flex justify-between items-center text-nordic-slate">
-                  <span class="text-nordic-muted">借出日期:</span>
-                  <span class="font-mono font-medium">{{ item.borrowDate }}</span>
+                  <span class="text-nordic-muted">借閱日期:</span>
+                  <span class="font-mono">{{ item.borrowDate }}</span>
                 </div>
-                <div class="flex justify-between items-center text-red-700 font-medium">
-                  <span>應歸還日:</span>
-                  <span class="font-mono font-bold text-xs">{{ item.dueDate || '未標註' }}</span>
+                <div class="flex justify-between items-center text-red-700 font-semibold">
+                  <span>應還日期:</span>
+                  <span class="font-mono font-bold">{{ item.dueDate || '未標註' }}</span>
                 </div>
-                <div v-if="item.renewRange" class="flex justify-between items-center text-blue-900 bg-blue-50/70 p-1.5 rounded font-medium text-[10px]">
+                <div v-if="item.renewRange" class="flex justify-between items-center text-blue-900 bg-blue-50/80 p-1.5 rounded font-medium text-[11px] mt-1">
                   <span>可續借日:</span>
                   <span class="font-mono">{{ item.renewRange }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- 操作列 -->
-            <div class="pt-3 border-t border-sand-100 flex items-center justify-between">
+            <div class="pt-2 border-t border-sand-100 flex items-center justify-between">
               <button @click="copyLibToWishlist(item)" class="text-xs text-purple-700 hover:text-purple-900 font-medium">
-                🔖 收入願望
+                🔖 轉願望清單
               </button>
               <button @click="markAsReturned(item.id)" 
                       class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium px-3.5 py-1.5 rounded-lg border border-emerald-200 transition">
-                ✓ 標記已歸還
+                ✓ 標記已還
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ==================== 獨立 Section 2：已經歸還的歷史紀錄 (Returned History Archive) ==================== -->
-      <section class="space-y-3 pt-6">
+      <!-- 區塊 B：已經歸還歷史 (Returned History) -->
+      <section class="space-y-3 pt-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sand-200 pb-2">
           <h4 class="font-serif-title font-bold text-lg text-nordic-dark flex items-center gap-2">
-            <span>🏛️</span> 已經歸還歷史紀錄 · Returned History
+            <span>🏛️</span> 已經歸還歷史 · Returned Archive
             <span class="text-xs bg-sand-100 text-nordic-slate font-sans px-2.5 py-0.5 rounded-full font-bold">
               {{ returnedHistory.length }} 冊
             </span>
@@ -511,12 +497,12 @@
               <button v-for="yr in ['all', '2026', '2025', '2024', '2023']" :key="yr"
                       @click="filterLibYear = yr"
                       :class="filterLibYear === yr ? 'bg-nordic-dark text-white font-medium' : 'bg-white text-nordic-slate border border-nordic-border'"
-                      class="px-2.5 py-1 rounded-lg transition text-xs">
+                      class="px-2 py-0.5 rounded-lg transition text-xs">
                 {{ yr === 'all' ? '全部' : yr }}
               </button>
             </div>
-            <div class="relative w-48">
-              <input v-model="libSearchQuery" placeholder="搜尋歷史借閱書名..."
+            <div class="relative w-44">
+              <input v-model="libSearchQuery" placeholder="搜尋歷史書目..."
                      class="w-full bg-white border border-nordic-border rounded-xl pl-6 pr-2.5 py-1 text-xs focus:outline-none" />
               <span class="absolute left-2 top-1.5 text-gray-400 text-xs">🔍</span>
             </div>
@@ -524,7 +510,7 @@
         </div>
 
         <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
-          <div v-if="filteredReturnedHistory.length === 0" class="py-12 text-center text-nordic-muted text-xs">
+          <div v-if="filteredReturnedHistory.length === 0" class="py-10 text-center text-nordic-muted text-xs">
             無符合條件的歸還紀錄
           </div>
 
@@ -540,8 +526,7 @@
                   <span v-if="rec.callNo" class="font-mono bg-sand-100 px-1.5 py-0.2 rounded text-[11px]">索書號: {{ rec.callNo }}</span>
                   <span class="text-gray-300">•</span>
                   <span>借: {{ rec.borrowDate }}</span>
-                  <span v-if="rec.returnDate" class="text-nordic-slate font-medium">~ 還: {{ rec.returnDate }}</span>
-                  <span class="text-emerald-700 font-mono text-[11px] ml-1">估值: NT${{ rec.val || 400 }}</span>
+                  <span v-if="rec.returnDate" class="text-nordic-slate">~ 還: {{ rec.returnDate }}</span>
                 </p>
               </div>
             </div>
@@ -598,137 +583,4 @@
         <div v-for="(b, idx) in wishlistBooks" :key="b.id" 
              class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-sand-50/60 transition">
           <div class="flex items-start gap-3">
-            <span class="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md mt-0.5">#{{ idx + 1 }}</span>
-            <div>
-              <h4 class="font-serif-title font-semibold text-base text-nordic-dark">{{ b.title }}</h4>
-              <p class="text-xs text-nordic-muted mt-0.5">
-                <span v-if="b.author">{{ b.author }}</span>
-                <span v-if="b.publisher" class="text-gray-300 mx-1">•</span>
-                <span v-if="b.publisher">{{ b.publisher }}</span>
-                <span v-if="b.source" class="ml-2 text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded text-[11px]">{{ b.source }}</span>
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
-            <button @click="moveToOwned(b, '在家')" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium px-2.5 py-1.5 rounded-lg border border-emerald-200 transition">
-              ✓ 買了，放老家
-            </button>
-            <button @click="moveToOwned(b, '在租屋處')" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium px-2.5 py-1.5 rounded-lg border border-amber-200 transition">
-              ✓ 買了，放租屋處
-            </button>
-            <button @click="deleteBook(b.id)" class="text-gray-300 hover:text-red-500 text-xs p-1.5 transition ml-1" title="移除">
-              ✕
-            </button>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- 分頁 5：正式新書入藏 & 條碼掃描 (Add & Scan) -->
-    <main v-if="currentTab === 'add'" class="space-y-6 animate-fadeIn">
-      <section class="bg-white rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-sand-100 gap-3">
-          <div>
-            <h3 class="font-serif-title font-bold text-xl text-nordic-dark">正式藏書登記</h3>
-            <p class="text-xs text-nordic-muted mt-1">登記已購入的實體書，支援掃描條碼或手動輸入詳細出版資訊</p>
-          </div>
-          <button @click="startScanner" type="button" 
-                  class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-4 py-2.5 rounded-xl shadow-sm font-medium transition flex items-center gap-2 self-start sm:self-auto cursor-pointer">
-            <span>📷</span> 啟動鏡頭掃描條碼
-          </button>
-        </div>
-
-        <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70 flex flex-col sm:flex-row items-center gap-2">
-          <span class="text-xs font-semibold text-nordic-slate flex-shrink-0">🔢 手打 ISBN 查書：</span>
-          <input v-model.trim="manualIsbn" placeholder="輸入 13 碼 ISBN（例如：978986...）" 
-                 class="w-full bg-white border border-nordic-border rounded-xl px-3 py-1.5 text-xs focus:outline-none" />
-          <button @click="lookupManualIsbn" type="button" 
-                  class="w-full sm:w-auto bg-nordic-slate hover:bg-nordic-dark text-white text-xs px-4 py-1.5 rounded-xl transition flex-shrink-0 font-medium">
-            自動查詢帶入
-          </button>
-        </div>
-
-        <form @submit.prevent="addBook" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">書名 *</label>
-              <input v-model.trim="newBook.title" placeholder="例如：變形記" required
-                     class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:bg-white focus:ring-1 focus:ring-nordic-slate transition" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">作者</label>
-              <input v-model.trim="newBook.author" placeholder="例如：卡夫卡"
-                     class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:bg-white focus:ring-1 focus:ring-nordic-slate transition" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">出版社</label>
-              <input v-model.trim="newBook.publisher" placeholder="例如：漫遊者"
-                     class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:bg-white focus:ring-1 focus:ring-nordic-slate transition" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">存放位置</label>
-              <select v-model="newBook.location" class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer">
-                <option value="在家">📍 老家</option>
-                <option value="在租屋處">🏢 租屋處</option>
-                <option value="售出">🏷️ 售出</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">書況</label>
-              <select v-model="newBook.type" class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer">
-                <option value="新">新書</option>
-                <option value="二手">二手</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">購書出處</label>
-              <select :value="newBook.source" 
-                      @change="handleNewBookSourceSelect($event.target.value)"
-                      class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer truncate">
-                <option value="">🛒 未填出處</option>
-                <option v-for="src in allSourceOptions" :key="src" :value="src">{{ src }}</option>
-                <option value="__ADD_NEW__" class="font-bold">➕ 自訂新增出處...</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-nordic-slate mb-1">閱讀進度</label>
-              <select v-model="newBook.readingStatus" class="w-full bg-sand-50/70 border border-nordic-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white cursor-pointer">
-                <option value="未讀">待讀</option>
-                <option value="閱讀中">📖 閱讀中</option>
-                <option value="閱讀完畢">✓ 完畢</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="pt-4 flex justify-end">
-            <button type="submit" class="bg-nordic-dark hover:bg-nordic-slate text-white text-xs px-6 py-2.5 rounded-xl shadow-sm font-semibold transition cursor-pointer">
-              ＋ 正式收錄此書
-            </button>
-          </div>
-        </form>
-      </section>
-    </main>
-
-    <!-- 分頁 6：書房手札 (Blog) -->
-    <main v-if="currentTab === 'blog'" class="space-y-6 animate-fadeIn">
-      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm space-y-4">
-        <div class="flex items-center justify-between pb-3 border-b border-sand-100">
-          <div>
-            <h3 class="font-serif-title font-bold text-xl text-nordic-dark">書房手札 · Notes</h3>
-            <p class="text-xs text-nordic-muted mt-0.5">淘書雜感、讀後短摘或任何關於閱讀的碎念</p>
-          </div>
-          <button @click="showNewPost = !showNewPost" class="text-xs bg-sand-100 hover:bg-sand-200 text-nordic-dark font-medium px-3.5 py-1.5 rounded-xl transition">
-            {{ showNewPost ? '✕ 關閉' : '✍️ 寫新隨筆' }}
-          </button>
-        </div>
-
-        <div v-if="showNewPost" class="bg-sand-50/80 p-4 sm:p-5 rounded-2xl border border-nordic-border space-y-3">
-          <input v-model.trim="newPost.title" placeholder="隨筆標題..." class="w-full bg-white border border-nordic-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none" />
-          <textarea v-model.trim
+            <span class="text-xs font-mono text-purple-600 bg-purple-50 px-2 py
