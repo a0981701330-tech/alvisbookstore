@@ -47,7 +47,7 @@
     #reader video { border-radius: 12px; }
   </style>
 </head>
-<body class="min-h-screen py-6 md:py-10 px-3 sm:px-6 md:px-8">
+<body class="min-h-screen py-6 md:py-10 px-3 sm:px-6 md:px-8 pb-24">
   <div id="app" class="max-w-4xl mx-auto">
     
     <!-- 頂部導航列與狀態 -->
@@ -62,7 +62,7 @@
         <h1 class="text-2xl sm:text-3xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
       </div>
 
-      <!-- 分頁切換選單與儲存 -->
+      <!-- 分頁切換選單 -->
       <div class="flex flex-wrap items-center gap-2">
         <nav class="flex items-center bg-white/90 border border-nordic-border rounded-xl p-1 shadow-sm text-xs font-medium">
           <button v-for="tab in tabs" :key="tab.id"
@@ -71,22 +71,27 @@
                   class="px-2.5 sm:px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
             <span>{{ tab.icon }}</span>
             <span>{{ tab.label }}</span>
-            <span v-if="tab.badge" class="ml-0.5 px-1.5 py-0.2 bg-purple-100 text-purple-700 text-[10px] rounded-full font-bold">
+            <span v-if="tab.badge" class="ml-0.5 px-1.5 py-0.2 bg-blue-100 text-blue-700 text-[10px] rounded-full font-bold">
               {{ tab.badge }}
             </span>
           </button>
         </nav>
-
-        <button @click="saveToCloud" 
-                :disabled="isSaving"
-                :class="hasUnsavedChanges ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold ring-2 ring-amber-300 animate-pulse' : 'bg-nordic-slate hover:bg-nordic-dark text-white'"
-                class="px-3 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5 text-xs disabled:opacity-50 cursor-pointer">
-          <span v-if="isSaving">⏳ 儲存中</span>
-          <span v-else-if="hasUnsavedChanges">💾 儲存變更</span>
-          <span v-else>💾 儲存</span>
-        </button>
       </div>
     </header>
+
+    <!-- 功能 1：右下角「浮動儲存按鍵」膠囊 -->
+    <aside class="fixed bottom-6 right-6 z-40">
+      <button @click="saveToCloud" 
+              :disabled="isSaving"
+              :class="hasUnsavedChanges 
+                ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold ring-4 ring-amber-200 animate-bounce shadow-xl' 
+                : 'bg-nordic-dark hover:bg-nordic-slate text-white shadow-lg'"
+              class="flex items-center gap-2 px-4 py-3 rounded-full text-xs font-medium transition transform active:scale-95 cursor-pointer backdrop-blur-md">
+        <span class="text-base" v-if="isSaving">⏳</span>
+        <span class="text-base" v-else>💾</span>
+        <span>{{ isSaving ? '正在同步雲端...' : (hasUnsavedChanges ? '儲存變更至雲端' : '已儲存雲端') }}</span>
+      </button>
+    </aside>
 
     <!-- 分頁 1：首頁 (Landing Page) -->
     <main v-if="currentTab === 'home'" class="space-y-8 animate-fadeIn">
@@ -107,19 +112,19 @@
             <div class="text-[11px] text-nordic-muted">實體藏書</div>
             <div class="text-xl font-bold text-nordic-dark mt-0.5">{{ stats.totalOwned }} <span class="text-xs font-normal text-nordic-muted">冊</span></div>
           </div>
-          <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70 cursor-pointer hover:bg-sand-100 transition"
-               @click="currentTab = 'archive'; filterRead = '閱讀完畢'">
-            <div class="text-[11px] text-nordic-sage font-medium">藏書讀畢</div>
-            <div class="text-xl font-bold text-nordic-sage mt-0.5">{{ stats.finished }} <span class="text-xs font-normal text-nordic-muted">冊 ({{ analytics.readRate }}%)</span></div>
+          <div class="bg-blue-50/80 p-3.5 rounded-2xl border border-blue-100 cursor-pointer hover:bg-blue-100/60 transition"
+               @click="currentTab = 'library'">
+            <div class="text-[11px] text-blue-800 font-medium">租借中</div>
+            <div class="text-xl font-bold text-blue-900 mt-0.5">{{ activeLoans.length }} <span class="text-xs font-normal text-nordic-muted">冊翻閱中</span></div>
           </div>
           <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70">
             <div class="text-[11px] text-[#556951] font-medium">老家 / 租屋</div>
             <div class="text-xl font-bold text-nordic-dark mt-0.5">{{ stats.home }} <span class="text-xs font-normal text-nordic-muted">/ {{ stats.rental }}</span></div>
           </div>
-          <div class="bg-blue-50/60 p-3.5 rounded-2xl border border-blue-100 cursor-pointer hover:bg-blue-100/60 transition"
-               @click="currentTab = 'library'">
-            <div class="text-[11px] text-blue-800 font-medium">圖書館閱歷</div>
-            <div class="text-xl font-bold text-blue-800 mt-0.5">{{ libraryRecords.length }} <span class="text-xs font-normal text-nordic-muted">冊記錄</span></div>
+          <div class="bg-purple-50/60 p-3.5 rounded-2xl border border-purple-100 cursor-pointer hover:bg-purple-100/60 transition"
+               @click="currentTab = 'wishlist'">
+            <div class="text-[11px] text-purple-700 font-medium">願望清單</div>
+            <div class="text-xl font-bold text-purple-700 mt-0.5">{{ stats.wishlist }} <span class="text-xs font-normal text-nordic-muted">冊待購</span></div>
           </div>
         </div>
 
@@ -128,7 +133,7 @@
             📖 瀏覽藏書縱覽
           </button>
           <button @click="currentTab = 'library'" class="bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 px-5 py-2.5 rounded-xl transition">
-            🏛️ 圖書館借閱史 ({{ libraryRecords.length }})
+            🏛️ 圖書館專區 ({{ activeLoans.length }} 借閱中)
           </button>
           <button @click="currentTab = 'wishlist'" class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-5 py-2.5 rounded-xl transition">
             🔖 願望清單
@@ -136,17 +141,17 @@
         </div>
       </section>
 
-      <!-- 正在翻閱區 -->
+      <!-- 正在翻閱區 (實體藏書) -->
       <section class="space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="font-serif-title font-bold text-lg text-nordic-dark flex items-center gap-2">
-            <span>📖</span> 正在翻閱 · Current Reading
+            <span>📖</span> 實體藏書 · 正在翻閱
           </h3>
           <span class="text-xs text-nordic-muted">共 {{ currentlyReadingBooks.length }} 冊</span>
         </div>
 
         <div v-if="currentlyReadingBooks.length === 0" class="bg-white rounded-2xl p-8 text-center text-nordic-muted text-xs border border-nordic-border">
-          目前沒有標記為「閱讀中」的書籍，去書架上挑一本開始吧！
+          目前沒有標記為「閱讀中」的實體書籍，去書架上挑一本開始吧！
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -172,7 +177,7 @@
       </section>
     </main>
 
-    <!-- 分頁 2：藏書縱覽 (Archive - 修復已售出書籍可正常檢視) -->
+    <!-- 分頁 2：藏書縱覽 (Archive) -->
     <main v-if="currentTab === 'archive'" class="space-y-4 animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-1.5 text-xs">
@@ -239,30 +244,6 @@
             <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
               <span>新書: {{ analytics.newCount }} ({{ analytics.newPercent }}%)</span>
               <span>二手: {{ analytics.usedCount }} ({{ analytics.usedPercent }}%)</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-          <div class="space-y-1">
-            <h4 class="text-xs font-semibold text-nordic-slate">✍️ 常讀作者</h4>
-            <div v-for="a in analytics.topAuthors" :key="a.name" class="flex justify-between text-xs py-0.5 px-2 rounded bg-sand-50">
-              <span class="truncate max-w-[130px]">{{ a.name }}</span>
-              <span class="font-mono text-nordic-muted">{{ a.count }}冊</span>
-            </div>
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-xs font-semibold text-nordic-slate">🏛️ 出版社</h4>
-            <div v-for="p in analytics.topPublishers" :key="p.name" class="flex justify-between text-xs py-0.5 px-2 rounded bg-sand-50">
-              <span class="truncate max-w-[130px]">{{ p.name }}</span>
-              <span class="font-mono text-nordic-muted">{{ p.count }}冊</span>
-            </div>
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-xs font-semibold text-nordic-slate">🛒 淘書出處</h4>
-            <div v-for="s in analytics.topSources" :key="s.name" class="flex justify-between text-xs py-0.5 px-2 rounded bg-sand-50">
-              <span class="truncate max-w-[130px]">{{ s.name }}</span>
-              <span class="font-mono text-nordic-muted">{{ s.count }}冊</span>
             </div>
           </div>
         </div>
@@ -342,88 +323,190 @@
       </div>
     </main>
 
-    <!-- 分頁 3：圖書館閱歷 (Library Archive) -->
-    <main v-if="currentTab === 'library'" class="space-y-4 animate-fadeIn">
-      <div class="bg-blue-50/70 rounded-2xl p-4 sm:p-5 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <!-- 分頁 3：圖書館專區 (功能 2 & 3：租借中與歷史徹底分流 + 可續借日看板) -->
+    <main v-if="currentTab === 'library'" class="space-y-6 animate-fadeIn">
+      
+      <!-- 頂部資訊與登記按鈕 -->
+      <div class="bg-blue-50/70 rounded-3xl p-5 sm:p-6 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 class="font-serif-title font-bold text-lg text-blue-950 flex items-center gap-2">
-            <span>🏛️</span> 圖書館閱歷 · Library History
+          <h3 class="font-serif-title font-bold text-xl text-blue-950 flex items-center gap-2">
+            <span>🏛️</span> 圖書館借閱管理
           </h3>
-          <p class="text-xs text-blue-700/80 mt-0.5">累計借閱 {{ libraryRecords.length }} 冊。記錄在大學校園與公共圖書館翻閱過的精神糧食。</p>
+          <p class="text-xs text-blue-800/80 mt-1">
+            現正租借中 <span class="font-bold text-blue-900">{{ activeLoans.length }}</span> 冊 · 累計歸還歷史 <span class="font-bold text-blue-900">{{ returnedHistory.length }}</span> 冊
+          </p>
         </div>
-        <div class="flex items-center gap-2 self-start sm:self-auto">
-          <button @click="showAddLib = !showAddLib" 
-                  class="bg-blue-900 hover:bg-blue-950 text-white text-xs px-3.5 py-2 rounded-xl shadow-sm transition font-medium flex items-center gap-1.5">
-            <span>{{ showAddLib ? '✕ 關閉' : '＋ 登記借閱' }}</span>
-          </button>
-        </div>
+        <button @click="showAddLib = !showAddLib" 
+                class="bg-blue-900 hover:bg-blue-950 text-white text-xs px-4 py-2.5 rounded-xl shadow-sm transition font-medium flex items-center gap-1.5 self-start sm:self-auto">
+          <span>{{ showAddLib ? '✕ 關閉登記' : '＋ 登記新借書籍' }}</span>
+        </button>
       </div>
 
-      <div v-if="showAddLib" class="bg-white p-4 rounded-2xl border border-blue-200 shadow-sm space-y-3">
-        <div class="text-xs font-bold text-blue-900">登記新借書：</div>
-        <form @submit.prevent="addLibraryRecord" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-          <input v-model.trim="newLib.title" placeholder="書名 *" required
-                 class="sm:col-span-2 bg-blue-50/40 border border-blue-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white" />
-          <input v-model.trim="newLib.callNo" placeholder="索書號 (選填)"
-                 class="bg-blue-50/40 border border-blue-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white" />
-          <input v-model.trim="newLib.borrowDate" placeholder="借閱日期 (例: 2026-10-02)"
-                 class="bg-blue-50/40 border border-blue-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white" />
-          <div class="sm:col-span-4 flex justify-end">
-            <button type="submit" class="bg-blue-900 text-white text-xs px-4 py-2 rounded-xl font-medium">加入借閱紀錄</button>
+      <!-- 功能 3：登記新借閱欄位（支援歸還日期、可續借日期） -->
+      <div v-if="showAddLib" class="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
+        <div class="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+          <span>✍️</span> 填寫借閱資訊（可填入應還與續借日期）
+        </div>
+        <form @submit.prevent="addLibraryRecord" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] font-semibold text-nordic-slate mb-1">書名 *</label>
+            <input v-model.trim="newLib.title" placeholder="例如：走拍臺灣" required
+                   class="w-full bg-sand-50/60 border border-blue-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-nordic-slate mb-1">作者</label>
+            <input v-model.trim="newLib.author" placeholder="例如：謝三泰"
+                   class="w-full bg-sand-50/60 border border-blue-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white" />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-nordic-slate mb-1">索書號 / 登錄號</label>
+            <input v-model.trim="newLib.callNo" placeholder="例：957.9 8243"
+                   class="w-full bg-sand-50/60 border border-blue-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white font-mono" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-nordic-slate mb-1">借閱日期</label>
+            <input v-model.trim="newLib.borrowDate" placeholder="例：2026-10-28"
+                   class="w-full bg-sand-50/60 border border-blue-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white font-mono" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-red-700 mb-1">應歸還日期 *</label>
+            <input v-model.trim="newLib.dueDate" placeholder="例：2026-11-18" required
+                   class="w-full bg-red-50/40 border border-red-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white font-mono" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] font-semibold text-blue-900 mb-1">可續借日期區間 (選填)</label>
+            <input v-model.trim="newLib.renewRange" placeholder="例：2026-11-15 ~ 2026-11-18"
+                   class="w-full bg-blue-50/40 border border-blue-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:bg-white font-mono" />
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-blue-900 hover:bg-blue-950 text-white text-xs py-2.5 rounded-xl font-medium transition shadow-sm">
+              登記借閱入庫
+            </button>
           </div>
         </form>
       </div>
 
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div class="flex flex-wrap items-center gap-1.5 text-xs">
-          <span class="text-nordic-muted text-[11px]">年份:</span>
-          <button v-for="yr in ['all', '2026', '2025', '2024', '2023']" :key="yr"
-                  @click="filterLibYear = yr"
-                  :class="filterLibYear === yr ? 'bg-blue-900 text-white font-medium shadow-sm' : 'bg-white text-nordic-slate border border-nordic-border'"
-                  class="px-2.5 py-1 rounded-lg transition text-xs">
-            {{ yr === 'all' ? '全部' : yr }}
-          </button>
-        </div>
-        <div class="relative w-full sm:w-56">
-          <input v-model="libSearchQuery" placeholder="搜尋借閱書名、索書號..."
-                 class="w-full bg-white border border-nordic-border rounded-xl pl-7 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900" />
-          <span class="absolute left-2.5 top-2 text-gray-400 text-xs">🔍</span>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
-        <div v-if="filteredLibraryRecords.length === 0" class="py-12 text-center text-nordic-muted text-xs">
-          無符合條件的借閱紀錄
-        </div>
-
-        <div v-for="(rec, idx) in filteredLibraryRecords" :key="rec.id" 
-             class="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-sand-50/60 transition">
-          <div class="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
-            <span class="text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md mt-0.5 flex-shrink-0">
-              #{{ formatIndex(filteredLibraryRecords.length - idx) }}
+      <!-- ==================== 區塊 A：租借中的書 (On Loan) ==================== -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between border-b border-sand-200 pb-2">
+          <h4 class="font-serif-title font-bold text-base text-blue-950 flex items-center gap-2">
+            <span>📖</span> 現正租借中 · Active Loans
+            <span class="text-xs bg-blue-100 text-blue-800 font-sans px-2 py-0.5 rounded-full font-bold">
+              {{ activeLoans.length }} 冊
             </span>
-            <div class="min-w-0 flex-1">
-              <h4 class="font-serif-title font-semibold text-base text-nordic-dark leading-snug">{{ rec.title }}</h4>
-              <p class="text-xs text-nordic-muted mt-0.5 flex flex-wrap items-center gap-2">
-                <span v-if="rec.callNo" class="font-mono bg-sand-100 px-1.5 py-0.2 rounded text-[11px]">索書號: {{ rec.callNo }}</span>
-                <span v-if="rec.barcode" class="font-mono text-gray-400 text-[10px]">登錄: {{ rec.barcode }}</span>
-                <span class="text-gray-400">•</span>
-                <span class="text-blue-900/80 font-medium">借: {{ rec.borrowDate }}</span>
-                <span v-if="rec.returnDate" class="text-nordic-muted">~ 還: {{ rec.returnDate }}</span>
-              </p>
+          </h4>
+          <span class="text-xs text-nordic-muted font-sans">請注意歸還與可續借時間</span>
+        </div>
+
+        <div v-if="activeLoans.length === 0" class="bg-white rounded-2xl p-8 text-center text-nordic-muted text-xs border border-nordic-border">
+          目前沒有任何租借中的圖書，去圖書館借幾本好書吧！
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div v-for="item in activeLoans" :key="item.id" 
+               class="bg-white rounded-2xl p-4 border border-blue-200/80 shadow-sm flex flex-col justify-between hover:border-blue-400 transition space-y-3">
+            <div>
+              <div class="flex items-center justify-between text-[11px] mb-1.5">
+                <span class="bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded-md">借閱中</span>
+                <span v-if="item.callNo" class="font-mono text-nordic-muted text-[10px]">{{ item.callNo }}</span>
+              </div>
+              <h5 class="font-serif-title font-bold text-base text-nordic-dark leading-snug">{{ item.title }}</h5>
+              <p v-if="item.author" class="text-xs text-nordic-muted mt-0.5">{{ item.author }}</p>
+
+              <!-- 關鍵日程看板 -->
+              <div class="mt-3 p-2.5 bg-sand-50/80 rounded-xl space-y-1.5 text-[11px] border border-sand-100 font-sans">
+                <div class="flex justify-between items-center text-nordic-slate">
+                  <span class="text-nordic-muted">借出日期:</span>
+                  <span class="font-mono">{{ item.borrowDate }}</span>
+                </div>
+                <div class="flex justify-between items-center text-red-700 font-medium">
+                  <span>應還日期:</span>
+                  <span class="font-mono font-bold">{{ item.dueDate || '未標註' }}</span>
+                </div>
+                <div v-if="item.renewRange" class="flex justify-between items-center text-blue-900 bg-blue-50/70 p-1 rounded font-medium text-[10px]">
+                  <span>可續借日:</span>
+                  <span class="font-mono">{{ item.renewRange }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作列 -->
+            <div class="pt-2 border-t border-sand-100 flex items-center justify-between">
+              <button @click="copyLibToWishlist(item)" class="text-xs text-purple-700 hover:text-purple-900 font-medium">
+                🔖 轉願望清單
+              </button>
+              <button @click="markAsReturned(item.id)" 
+                      class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium px-3 py-1.5 rounded-lg border border-emerald-200 transition">
+                ✓ 標記已還
+              </button>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div class="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 flex-shrink-0">
-            <button @click="copyLibToWishlist(rec)" class="text-xs bg-purple-50 hover:bg-purple-100 text-purple-800 font-medium px-2.5 py-1.5 rounded-lg border border-purple-200 transition">
-              🔖 收入願望清單
-            </button>
-            <button @click="deleteLibRecord(rec.id)" class="text-gray-300 hover:text-red-500 text-xs p-1.5 transition" title="刪除">
-              ✕
-            </button>
+      <!-- ==================== 區塊 B：借閱歷史紀錄 (Returned History) ==================== -->
+      <section class="space-y-3 pt-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sand-200 pb-2">
+          <h4 class="font-serif-title font-bold text-base text-nordic-dark flex items-center gap-2">
+            <span>🏛️</span> 歸還借閱歷史 · History Archive
+            <span class="text-xs bg-sand-100 text-nordic-slate font-sans px-2 py-0.5 rounded-full font-bold">
+              {{ returnedHistory.length }} 冊
+            </span>
+          </h4>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1 text-xs">
+              <button v-for="yr in ['all', '2026', '2025', '2024', '2023']" :key="yr"
+                      @click="filterLibYear = yr"
+                      :class="filterLibYear === yr ? 'bg-nordic-dark text-white font-medium' : 'bg-white text-nordic-slate border border-nordic-border'"
+                      class="px-2 py-0.5 rounded-lg transition text-xs">
+                {{ yr === 'all' ? '全部' : yr }}
+              </button>
+            </div>
+            <div class="relative w-44">
+              <input v-model="libSearchQuery" placeholder="搜尋歷史書目..."
+                     class="w-full bg-white border border-nordic-border rounded-xl pl-6 pr-2.5 py-1 text-xs focus:outline-none" />
+              <span class="absolute left-2 top-1.5 text-gray-400 text-xs">🔍</span>
+            </div>
           </div>
         </div>
-      </div>
+
+        <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
+          <div v-if="filteredReturnedHistory.length === 0" class="py-10 text-center text-nordic-muted text-xs">
+            無符合條件的歸還紀錄
+          </div>
+
+          <div v-for="(rec, idx) in filteredReturnedHistory" :key="rec.id" 
+               class="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-sand-50/60 transition">
+            <div class="flex items-start gap-2.5 min-w-0 flex-1">
+              <span class="text-[11px] font-mono text-nordic-muted bg-sand-100 px-1.5 py-0.5 rounded mt-0.5 flex-shrink-0">
+                #{{ formatIndex(filteredReturnedHistory.length - idx) }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <h5 class="font-serif-title font-semibold text-base text-nordic-dark leading-snug">{{ rec.title }}</h5>
+                <p class="text-xs text-nordic-muted mt-0.5 flex flex-wrap items-center gap-2 font-sans">
+                  <span v-if="rec.callNo" class="font-mono bg-sand-100 px-1.5 py-0.2 rounded text-[11px]">索書號: {{ rec.callNo }}</span>
+                  <span class="text-gray-300">•</span>
+                  <span>借: {{ rec.borrowDate }}</span>
+                  <span v-if="rec.returnDate" class="text-nordic-slate">~ 還: {{ rec.returnDate }}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 flex-shrink-0">
+              <button @click="copyLibToWishlist(rec)" class="text-xs bg-purple-50 hover:bg-purple-100 text-purple-800 font-medium px-2.5 py-1.5 rounded-lg border border-purple-200 transition">
+                🔖 收入願望
+              </button>
+              <button @click="deleteLibRecord(rec.id)" class="text-gray-300 hover:text-red-500 text-xs p-1.5 transition" title="刪除">
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- 分頁 4：願望清單 (Wishlist) -->
@@ -674,6 +757,7 @@
       '雲林田納西書店', '麗寶金石堂', '電子書', '舅舅贈送', '學弟贈送', 'Mick贈送'
     ];
 
+    // 初始藏書
     const INITIAL_BOOKS = [
       {"id": 1, "title": "小王子", "author": "聖修伯里", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢"},
       {"id": 2, "title": "安妮的日記", "author": "安妮法蘭克", "publisher": "志文出版社", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀"},
@@ -771,48 +855,73 @@
       {"id": 1791558270208, "title": "銀翼殺手", "author": "菲利普‧狄克", "publisher": "寂寞", "source": "誠品線上", "location": "售出", "type": "新", "readingStatus": "未讀"}
     ];
 
+    // 最新完整建檔：包含今天（2026-10-28）租借中的3本攝影書，以及完整歸還歷史
     const INITIAL_LIBRARY_RECORDS = [
-      {"id": 1791450653175, "title": "囍宴", "barcode": "", "callNo": "987.83 843", "borrowDate": "2026-10-05", "returnDate": "2026-10-08", "status": "已歸還"},
-      {"id": 1791339484321, "title": "悲情城市 : 劇照書. 經典劇照書33週年珍藏版", "barcode": "", "callNo": "987.83 8776", "borrowDate": "2026-10-05", "returnDate": "", "status": "借閱中"},
-      {"id": 1791339457292, "title": "多桑 : 吳念真電影劇本", "barcode": "", "callNo": "987.83 8853", "borrowDate": "2026-10-05", "returnDate": "", "status": "借閱中"},
-      {"id": 1791200197479, "title": "快門下的老台灣", "barcode": "", "callNo": "957.6 866", "borrowDate": "2026-09-30", "returnDate": "", "status": "借閱中"},
-      {"id": 1791200162321, "title": "紀實之眼 : 史上最偉大的新聞攝影師", "barcode": "", "callNo": "959 8345", "borrowDate": "2026-09-30", "returnDate": "", "status": "借閱中"},
-      {"id": 1791200128523, "title": "臺灣攝影家 : 侯淑姿", "barcode": "", "callNo": "9789865327262", "borrowDate": "2026-09-30", "returnDate": "", "status": "借閱中"},
-      {"id": 1, "title": "浮與沉 : 攝影大師尤金.史密斯的傳奇人生", "barcode": "C292774", "callNo": "959.52 8845 8847", "borrowDate": "2026-09-21", "returnDate": "2026-09-30", "status": "已歸還"},
+      // 租借中的書 (On Loan)
+      {"id": 1791600000001, "title": "翁庭華攝影作品集 : 山城九份", "author": "翁庭華", "barcode": "G000033", "callNo": "957 8666", "borrowDate": "2026-10-28", "dueDate": "2026-11-18", "renewRange": "2026-11-15 ~ 2026-11-18", "returnDate": "", "status": "借閱中"},
+      {"id": 1791600000002, "title": "走拍臺灣", "author": "謝三泰", "barcode": "C279629", "callNo": "957.9 8243", "borrowDate": "2026-10-28", "dueDate": "2026-11-18", "renewRange": "2026-11-15 ~ 2026-11-18", "returnDate": "", "status": "借閱中"},
+      {"id": 1791600000003, "title": "銀鹽世代-尋找歲月靈光. 1890s-2015 : 臺灣攝影家原作展", "author": "蔡昭儀主編", "barcode": "G052062", "callNo": "957.6 8455", "borrowDate": "2026-10-28", "dueDate": "2026-11-18", "renewRange": "2026-11-15 ~ 2026-11-18", "returnDate": "", "status": "借閱中"},
+
+      // 歸還歷史 (Returned History)
+      {"id": 201, "title": "Canon交換鏡頭採購年鑑", "barcode": "C263278", "callNo": "951.1 8764-4", "borrowDate": "2026-10-19", "returnDate": "2026-10-27", "status": "已歸還"},
+      {"id": 202, "title": "尋回失落的民國攝影. 1911-1949", "barcode": "C275509", "callNo": "950.933 8764", "borrowDate": "2026-10-19", "returnDate": "2026-10-27", "status": "已歸還"},
+      {"id": 203, "title": "法國珍藏早期臺灣影像 : 攝影與歷史的對話 : 1850-1920", "barcode": "C071277", "callNo": "957.6 8447", "borrowDate": "2026-10-19", "returnDate": "2026-10-27", "status": "已歸還"},
+      {"id": 204, "title": "臺灣的模樣 (Emerging Taiwanese cultural landscape)", "barcode": "G062380", "callNo": "957.6 8455-2", "borrowDate": "2026-10-19", "returnDate": "2026-10-27", "status": "已歸還"},
+      {"id": 205, "title": "追一條溪 : 濁水溪河畔記事", "barcode": "C320049", "callNo": "957.6 8473", "borrowDate": "2026-10-19", "returnDate": "2026-10-27", "status": "已歸還"},
+      {"id": 206, "title": "玩回底片機 : 48款銘機圖鑑與攝影解析", "barcode": "C242676", "callNo": "951.1 8452", "borrowDate": "2026-10-19", "returnDate": "2026-10-27", "status": "已歸還"},
+      {"id": 207, "title": "街頭劇場 (The streets as theater)", "barcode": "C314540", "callNo": "957.9 8243-2", "borrowDate": "2026-10-12", "returnDate": "2026-10-19", "status": "已歸還"},
+      {"id": 208, "title": "凝望.時代 : 穿越<<悲情城市>>二十年", "barcode": "C261824", "callNo": "987.83 8755", "borrowDate": "2026-10-12", "returnDate": "2026-10-19", "status": "已歸還"},
+      {"id": 209, "title": "鍾理和集", "barcode": "C055549", "callNo": "857.63 8646-2", "borrowDate": "2026-10-12", "returnDate": "2026-10-19", "status": "已歸還"},
+      {"id": 210, "title": "鍾肇政集", "barcode": "C055552", "callNo": "857.63 8647", "borrowDate": "2026-10-12", "returnDate": "2026-10-19", "status": "已歸還"},
+      {"id": 211, "title": "八八過後 : 莫拉克風災影像實錄", "barcode": "G036748", "callNo": "957.9 8444", "borrowDate": "2026-10-08", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 212, "title": "從電影中發現社會學", "barcode": "C295417", "callNo": "987.2 8446-2", "borrowDate": "2026-10-08", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 213, "title": "Zoom in南台灣 : 電影導演珍藏的拍片場景", "barcode": "C196874", "callNo": "987.3 8434", "borrowDate": "2026-10-08", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 214, "title": "哥吉拉大解剖圖鑑 : 西川伸司解構怪獸深淵", "barcode": "C316731", "callNo": "987.83 8477", "borrowDate": "2026-10-08", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 215, "title": "冷靜的暗房 (Darkroom stills)", "barcode": "C276124", "callNo": "950.1 8452-4", "borrowDate": "2026-10-08", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 216, "title": "怪物製造機 吉勒摩.戴托羅", "barcode": "C309590", "callNo": "987.099549 8355", "borrowDate": "2026-10-08", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 217, "title": "日系攝影 : 探究日本美學的表現與本質", "barcode": "C296852", "callNo": "950.931 876", "borrowDate": "2026-10-05", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 218, "title": "經典動漫魔力 : 零失敗の劇本創作與分鏡設計", "barcode": "C265526", "callNo": "987.34 842", "borrowDate": "2026-10-05", "returnDate": "2026-10-12", "status": "已歸還"},
+      {"id": 219, "title": "囍宴 (吳念真/李安)", "barcode": "G035043", "callNo": "987.83 843", "borrowDate": "2026-10-05", "returnDate": "2026-10-08", "status": "已歸還"},
+      {"id": 220, "title": "多桑 : 吳念真電影劇本", "barcode": "C075860", "callNo": "987.83 8853", "borrowDate": "2026-10-05", "returnDate": "2026-10-08", "status": "已歸還"},
+      {"id": 221, "title": "悲情城市 : 劇照書. 經典劇照書33週年珍藏版", "barcode": "C318004", "callNo": "987.83 8776", "borrowDate": "2026-10-05", "returnDate": "2026-10-08", "status": "已歸還"},
+      {"id": 222, "title": "臺灣攝影家 : 侯淑姿", "barcode": "G064547", "callNo": "958.33 8963", "borrowDate": "2026-09-30", "returnDate": "2026-10-05", "status": "已歸還"},
+      {"id": 223, "title": "紀實之眼 : 史上最偉大的新聞攝影師", "barcode": "C288218", "callNo": "959 8345", "borrowDate": "2026-09-30", "returnDate": "2026-10-05", "status": "已歸還"},
+      {"id": 224, "title": "快門下的老台灣", "barcode": "C019945", "callNo": "957.6 866", "borrowDate": "2026-09-30", "returnDate": "2026-10-05", "status": "已歸還"},
+      {"id": 1, "title": "浮與沉 : 攝影大師尤金.史密斯的傳奇人生", "barcode": "C292774", "callNo": "959.52 8845", "borrowDate": "2026-09-21", "returnDate": "2026-09-30", "status": "已歸還"},
       {"id": 2, "title": "如何不搞砸一部短片", "barcode": "C272885", "callNo": "987.4 865/2", "borrowDate": "2026-09-21", "returnDate": "2026-09-30", "status": "已歸還"},
       {"id": 3, "title": "文學.影像.創意 : 華語電影獨立製片面面觀", "barcode": "G035943", "callNo": "987.83 893", "borrowDate": "2026-09-21", "returnDate": "2026-09-30", "status": "已歸還"},
-      {"id": 4, "title": "100種電影拍攝手法 : 給獨立製片與業餘玩家的專業拍片技巧", "barcode": "C216938", "callNo": "987.4 8568", "borrowDate": "2026-09-21", "returnDate": "2026-09-30", "status": "已歸還"},
-      {"id": 5, "title": "Charlie and the chocolate factory", "barcode": "0064872", "callNo": "PZ7.D1515 C4 1998", "borrowDate": "2026-09-14", "returnDate": "2026-09-21", "status": "已歸還"},
+      {"id": 4, "title": "100種電影拍攝手法", "barcode": "C216938", "callNo": "987.4 8568", "borrowDate": "2026-09-21", "returnDate": "2026-09-30", "status": "已歸還"},
+      {"id": 5, "title": "Charlie and the chocolate factory", "barcode": "0064872", "callNo": "PZ7.D1515 C4", "borrowDate": "2026-09-14", "returnDate": "2026-09-21", "status": "已歸還"},
       {"id": 6, "title": "教父", "barcode": "C138452", "callNo": "874.57 836/6", "borrowDate": "2026-09-14", "returnDate": "2026-09-21", "status": "已歸還"},
-      {"id": 7, "title": "西洋哲學序說 (An introduction of history of the European philosophy)", "barcode": "G046948", "callNo": "140.9 885", "borrowDate": "2026-09-09", "returnDate": "2026-09-14", "status": "已歸還"},
+      {"id": 7, "title": "西洋哲學序說", "barcode": "G046948", "callNo": "140.9 885", "borrowDate": "2026-09-09", "returnDate": "2026-09-14", "status": "已歸還"},
       {"id": 8, "title": "哲學散步", "barcode": "C283496", "callNo": "140.9 8755", "borrowDate": "2026-09-09", "returnDate": "2026-09-14", "status": "已歸還"},
       {"id": 9, "title": "莊子哲學", "barcode": "C122810", "callNo": "121.33 8772", "borrowDate": "2026-09-09", "returnDate": "2026-09-14", "status": "已歸還"},
       {"id": 10, "title": "看懂李安 : 第一本從西方觀點剖析李安專書", "barcode": "C236118", "callNo": "987.83 8557", "borrowDate": "2026-09-08", "returnDate": "2026-09-21", "status": "已歸還"},
       {"id": 11, "title": "EMBA : 管理、人力、制度、培訓", "barcode": "C197347", "callNo": "490.3 8876", "borrowDate": "2026-09-07", "returnDate": "2026-09-14", "status": "已歸還"},
-      {"id": 12, "title": "Matilda (瑪蒂達)", "barcode": "0097754", "callNo": "PZ7.D1515 M38 2022", "borrowDate": "2026-09-07", "returnDate": "2026-09-21", "status": "已歸還"},
+      {"id": 12, "title": "Matilda (瑪蒂達)", "barcode": "0097754", "callNo": "PZ7.D1515 M38", "borrowDate": "2026-09-07", "returnDate": "2026-09-21", "status": "已歸還"},
       {"id": 13, "title": "月球城市", "barcode": "C286726", "callNo": "874.57 833/5-2", "borrowDate": "2026-09-07", "returnDate": "2026-09-14", "status": "已歸還"},
       {"id": 14, "title": "悲慘的開始", "barcode": "C137130", "callNo": "874.59 8855-4", "borrowDate": "2026-09-07", "returnDate": "2026-09-08", "status": "已歸還"},
       {"id": 15, "title": "放逐與王國 : 卡繆短篇小說集", "barcode": "C307022", "callNo": "876.57 848/2-9", "borrowDate": "2026-04-28", "returnDate": "2026-05-04", "status": "已歸還"},
       {"id": 16, "title": "生命中的美好缺憾", "barcode": "C260822", "callNo": "874.57 867/9-2", "borrowDate": "2026-04-19", "returnDate": "2026-04-22", "status": "已歸還"},
       {"id": 17, "title": "壁花男孩", "barcode": "C239461", "callNo": "874.59 8465", "borrowDate": "2026-04-19", "returnDate": "2026-04-24", "status": "已歸還"},
-      {"id": 18, "title": "The lord of the rings (魔戒)", "barcode": "0039354", "callNo": "PR6039.O32 T577 v.4", "borrowDate": "2026-04-19", "returnDate": "2026-04-24", "status": "已歸還"},
+      {"id": 18, "title": "The lord of the rings (魔戒)", "barcode": "0039354", "callNo": "PR6039.O32 T577", "borrowDate": "2026-04-19", "returnDate": "2026-04-24", "status": "已歸還"},
       {"id": 19, "title": "瘟疫", "barcode": "C316767", "callNo": "876.57 848/2-4", "borrowDate": "2026-04-16", "returnDate": "2026-04-17", "status": "已歸還"},
       {"id": 20, "title": "教育社會學", "barcode": "G045493", "callNo": "520.16 8643", "borrowDate": "2026-04-14", "returnDate": "2026-04-19", "status": "已歸還"},
-      {"id": 21, "title": "學霸筆記術 : 抓住重點,超越讀書的人生祕笈", "barcode": "C315989", "callNo": "521.1 824", "borrowDate": "2026-04-14", "returnDate": "2026-04-15", "status": "已歸還"},
+      {"id": 21, "title": "學霸筆記術", "barcode": "C315989", "callNo": "521.1 824", "borrowDate": "2026-04-14", "returnDate": "2026-04-15", "status": "已歸還"},
       {"id": 22, "title": "詩人生活", "barcode": "C160734", "callNo": "782.24 879", "borrowDate": "2026-04-14", "returnDate": "2026-04-15", "status": "已歸還"},
       {"id": 23, "title": "悲慘世界", "barcode": "G000825", "callNo": "876.57 738", "borrowDate": "2026-04-09", "returnDate": "2026-04-15", "status": "已歸還"},
       {"id": 24, "title": "法國文學名著巡禮", "barcode": "C103278", "callNo": "876.2 8336", "borrowDate": "2026-04-09", "returnDate": "2026-04-14", "status": "已歸還"},
       {"id": 25, "title": "閱讀週計畫 : 圖解文學常識", "barcode": "C245375", "callNo": "820 8754/2", "borrowDate": "2026-04-09", "returnDate": "2026-04-14", "status": "已歸還"},
       {"id": 26, "title": "教育心理學精解", "barcode": "C084230", "callNo": "521.022 8774", "borrowDate": "2026-04-09", "returnDate": "2026-04-14", "status": "已歸還"},
-      {"id": 27, "title": "灌籃高手完全版 (Slam Dunk) v.5", "barcode": "C309054", "callNo": "SCO 528.952 8554", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
-      {"id": 28, "title": "灌籃高手完全版 (Slam Dunk) v.4", "barcode": "C309053", "callNo": "SCO 528.952 8554", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
-      {"id": 29, "title": "灌籃高手完全版 (Slam Dunk) v.3", "barcode": "C309052", "callNo": "SCO 528.952 8554", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
-      {"id": 30, "title": "灌籃高手完全版 (Slam Dunk) v.2", "barcode": "C309051", "callNo": "SCO 528.952 8554", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
-      {"id": 31, "title": "漫話文學經典 : 源氏物語", "barcode": "C260326", "callNo": "SCO 861.542 8666", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
+      {"id": 27, "title": "灌籃高手完全版 (Slam Dunk) v.5", "barcode": "C309054", "callNo": "SCO 528.952", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
+      {"id": 28, "title": "灌籃高手完全版 (Slam Dunk) v.4", "barcode": "C309053", "callNo": "SCO 528.952", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
+      {"id": 29, "title": "灌籃高手完全版 (Slam Dunk) v.3", "barcode": "C309052", "callNo": "SCO 528.952", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
+      {"id": 30, "title": "灌籃高手完全版 (Slam Dunk) v.2", "barcode": "C309051", "callNo": "SCO 528.952", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
+      {"id": 31, "title": "漫話文學經典 : 源氏物語", "barcode": "C260326", "callNo": "SCO 861.542", "borrowDate": "2026-03-31", "returnDate": "2026-04-07", "status": "已歸還"},
       {"id": 32, "title": "吳宇森電影講座", "barcode": "C194420", "callNo": "987.31 8847", "borrowDate": "2026-03-30", "returnDate": "2026-03-31", "status": "已歸還"},
-      {"id": 33, "title": "灌籃高手完全版 (Slam Dunk) v.1", "barcode": "C309050", "callNo": "SCO 528.952 8554", "borrowDate": "2026-03-30", "returnDate": "2026-03-31", "status": "已歸還"},
+      {"id": 33, "title": "灌籃高手完全版 (Slam Dunk) v.1", "barcode": "C309050", "callNo": "SCO 528.952", "borrowDate": "2026-03-30", "returnDate": "2026-03-31", "status": "已歸還"},
       {"id": 34, "title": "台灣新電影的歷史文化經驗", "barcode": "C034345", "callNo": "987.927 8778", "borrowDate": "2026-03-30", "returnDate": "2026-03-31", "status": "已歸還"},
-      {"id": 35, "title": "查拉圖斯特拉如是說 : 尼采的超人決勝論", "barcode": "C307253", "callNo": "SCO 147.66 8532", "borrowDate": "2026-03-30", "returnDate": "2026-03-31", "status": "已歸還"},
+      {"id": 35, "title": "查拉圖斯特拉如是說 : 尼采的超人決勝論", "barcode": "C307253", "callNo": "SCO 147.66", "borrowDate": "2026-03-30", "returnDate": "2026-03-31", "status": "已歸還"},
       {"id": 36, "title": "龍槍編年史 v.1", "barcode": "G031685", "callNo": "874.57 855/4-4", "borrowDate": "2026-03-26", "returnDate": "2026-03-30", "status": "已歸還"},
       {"id": 37, "title": "阿甘正傳", "barcode": "G001879", "callNo": "874.57 8669", "borrowDate": "2026-03-24", "returnDate": "2026-03-30", "status": "已歸還"},
       {"id": 38, "title": "兒子的大玩偶", "barcode": "G058039", "callNo": "857.63 8345", "borrowDate": "2026-03-24", "returnDate": "2026-03-30", "status": "已歸還"},
@@ -820,7 +929,7 @@
       {"id": 40, "title": "烽火守書人", "barcode": "C226664", "callNo": "864.56 8856", "borrowDate": "2026-03-24", "returnDate": "2026-03-30", "status": "已歸還"},
       {"id": 41, "title": "打拼為臺灣 : 宋楚瑜邁向總統之路", "barcode": "C202707", "callNo": "782.886 8675", "borrowDate": "2026-03-18", "returnDate": "2026-03-24", "status": "已歸還"},
       {"id": 42, "title": "A. J. 的書店人生", "barcode": "C267898", "callNo": "873.57 856/2-2", "borrowDate": "2026-03-18", "returnDate": "2026-03-24", "status": "已歸還"},
-      {"id": 43, "title": "銀幕上的新台灣 : 新世紀台灣電影中的台灣新形象", "barcode": "C275381", "callNo": "987.0933 8676", "borrowDate": "2026-03-18", "returnDate": "2026-03-24", "status": "已歸還"},
+      {"id": 43, "title": "銀幕上的新台灣", "barcode": "C275381", "callNo": "987.0933 8676", "borrowDate": "2026-03-18", "returnDate": "2026-03-24", "status": "已歸還"},
       {"id": 44, "title": "社會學超圖解", "barcode": "C297735", "callNo": "540 8564", "borrowDate": "2026-03-16", "returnDate": "2026-03-18", "status": "已歸還"},
       {"id": 45, "title": "冰與火之歌. 第一部, 權力遊戲", "barcode": "C249529", "callNo": "874.57 835/7", "borrowDate": "2026-03-16", "returnDate": "2026-03-18", "status": "已歸還"},
       {"id": 46, "title": "社會學概論", "barcode": "C202751", "callNo": "540 8466-5", "borrowDate": "2026-03-16", "returnDate": "2026-03-18", "status": "已歸還"},
@@ -830,9 +939,9 @@
       {"id": 50, "title": "波西傑克森 : 神火之賊", "barcode": "C310507", "callNo": "874.57 8334/3", "borrowDate": "2026-02-25", "returnDate": "2026-03-03", "status": "已歸還"},
       {"id": 51, "title": "鼠疫 (卡繆)", "barcode": "C290613", "callNo": "876.57 848/2-4", "borrowDate": "2026-02-25", "returnDate": "2026-03-02", "status": "已歸還"},
       {"id": 52, "title": "羅生門 (芥川龍之介)", "barcode": "C064800", "callNo": "861.57 8546/2", "borrowDate": "2026-02-25", "returnDate": "2026-03-02", "status": "已歸還"},
-      {"id": 53, "title": "朱延平七日談 : 永遠不回頭的電影人生路", "barcode": "C308478", "callNo": "987.09933 8995", "borrowDate": "2026-02-23", "returnDate": "2026-02-25", "status": "已歸還"},
-      {"id": 54, "title": "大亨小傳 [錄影資料] (The Great Gatsby)", "barcode": "V003007", "callNo": "DVDP 987.83", "borrowDate": "2026-01-08", "returnDate": "2026-01-08", "status": "已歸還"},
-      {"id": 55, "title": "老狐狸 [錄影資料] (Old Fox)", "barcode": "V004563", "callNo": "DVDP 987.83", "borrowDate": "2026-01-07", "returnDate": "2026-01-07", "status": "已歸還"},
+      {"id": 53, "title": "朱延平七日談", "barcode": "C308478", "callNo": "987.09933 8995", "borrowDate": "2026-02-23", "returnDate": "2026-02-25", "status": "已歸還"},
+      {"id": 54, "title": "大亨小傳 [錄影資料]", "barcode": "V003007", "callNo": "DVDP 987.83", "borrowDate": "2026-01-08", "returnDate": "2026-01-08", "status": "已歸還"},
+      {"id": 55, "title": "老狐狸 [錄影資料]", "barcode": "V004563", "callNo": "DVDP 987.83", "borrowDate": "2026-01-07", "returnDate": "2026-01-07", "status": "已歸還"},
       {"id": 56, "title": "大亨杜月笙", "barcode": "C065365", "callNo": "782.886 8466/3", "borrowDate": "2026-01-05", "returnDate": "2026-01-08", "status": "已歸還"},
       {"id": 57, "title": "你想了解的侯孝賢、楊德昌、蔡明亮(但又沒敢問拉岡的)", "barcode": "C296244", "callNo": "987.31 8642", "borrowDate": "2026-01-05", "returnDate": "2026-01-08", "status": "已歸還"},
       {"id": 58, "title": "上街去吧! : 森山大道的街拍意見", "barcode": "C263859", "callNo": "953.9 8767", "borrowDate": "2026-01-05", "returnDate": "2026-01-07", "status": "已歸還"},
@@ -845,13 +954,13 @@
       {"id": 65, "title": "異鄉人 (卡繆)", "barcode": "G047370", "callNo": "876.57 848/2", "borrowDate": "2025-12-29", "returnDate": "2025-12-31", "status": "已歸還"},
       {"id": 66, "title": "羊男的迷宮", "barcode": "C302161", "callNo": "874.57 855/23-2", "borrowDate": "2025-12-29", "returnDate": "2025-12-31", "status": "已歸還"},
       {"id": 67, "title": "二00一 : 太空漫遊", "barcode": "C136327", "callNo": "873.57 8545/2-2", "borrowDate": "2025-12-18", "returnDate": "2025-12-22", "status": "已歸還"},
-      {"id": 68, "title": "造夢者克里斯多夫.諾蘭 : 打造時間和記憶的迷宮", "barcode": "C311908", "callNo": "987.31 838", "borrowDate": "2025-12-17", "returnDate": "2025-12-18", "status": "已歸還"},
-      {"id": 69, "title": "暴力鬼才昆汀.塔倫提諾 : 錄影帶店員逆襲成名導的神話", "barcode": "C307868", "callNo": "987.31 8477", "borrowDate": "2025-12-17", "returnDate": "2025-12-18", "status": "已歸還"},
+      {"id": 68, "title": "造夢者克里斯多夫.諾蘭", "barcode": "C311908", "callNo": "987.31 838", "borrowDate": "2025-12-17", "returnDate": "2025-12-18", "status": "已歸還"},
+      {"id": 69, "title": "暴力鬼才昆汀.塔倫提諾", "barcode": "C307868", "callNo": "987.31 8477", "borrowDate": "2025-12-17", "returnDate": "2025-12-18", "status": "已歸還"},
       {"id": 70, "title": "金閣寺 (三島由紀夫)", "barcode": "C052435", "callNo": "861.57 8546/2", "borrowDate": "2025-12-15", "returnDate": "2025-12-17", "status": "已歸還"},
-      {"id": 71, "title": "我們的搖滾樂 (Welcome to Taiwan rock music)", "barcode": "C319327", "callNo": "910.15 8524", "borrowDate": "2025-12-10", "returnDate": "2025-12-15", "status": "已歸還"},
+      {"id": 71, "title": "我們的搖滾樂", "barcode": "C319327", "callNo": "910.15 8524", "borrowDate": "2025-12-10", "returnDate": "2025-12-15", "status": "已歸還"},
       {"id": 72, "title": "中文閱讀與寫作", "barcode": "C217670", "callNo": "836 8673", "borrowDate": "2025-04-14", "returnDate": "2025-05-05", "status": "已歸還"},
       {"id": 73, "title": "The Singles [錄音資料]", "barcode": "D002088", "callNo": "CD", "borrowDate": "2024-10-30", "returnDate": "2024-10-30", "status": "已歸還"},
-      {"id": 74, "title": "山海經大圖鑑 : 遠古神話之歌", "barcode": "C289370", "callNo": "857.21 8767", "borrowDate": "2023-11-06", "returnDate": "2023-11-15", "status": "已歸還"},
+      {"id": 74, "title": "山海經大圖鑑", "barcode": "C289370", "callNo": "857.21 8767", "borrowDate": "2023-11-06", "returnDate": "2023-11-15", "status": "已歸還"},
       {"id": 75, "title": "十日談", "barcode": "G052278", "callNo": "877.57 3466", "borrowDate": "2023-10-15", "returnDate": "2023-10-31", "status": "已歸還"},
       {"id": 76, "title": "揹相機的革命家 : 用眼睛撼動世界的馬格南傳奇", "barcode": "C268257", "callNo": "896 866", "borrowDate": "2023-09-13", "returnDate": "2023-09-26", "status": "已歸還"}
     ];
@@ -874,10 +983,11 @@
         const showAddWish = ref(false);
         const newWish = ref({ title: '', author: '', note: '' });
 
+        // 圖書館狀態
         const showAddLib = ref(false);
         const filterLibYear = ref('all');
         const libSearchQuery = ref('');
-        const newLib = ref({ title: '', callNo: '', barcode: '', borrowDate: '' });
+        const newLib = ref({ title: '', author: '', callNo: '', borrowDate: '', dueDate: '', renewRange: '' });
 
         const getInitialBooks = () => {
           const saved = localStorage.getItem(LOCAL_KEY);
@@ -936,18 +1046,20 @@
           readingStatus: '未讀'
         });
 
-        // 核心修正：
-        // 1. allArchiveBooks: 包含實體書與售出紀錄（僅排除願望清單）
+        // 藏書過濾
         const allArchiveBooks = computed(() => books.value.filter(b => b.location !== '願望待購'));
-        // 2. ownedBooks: 真正持有的實體書（扣除售出，供總藏書與讀畢率統計）
         const ownedBooks = computed(() => books.value.filter(b => b.location !== '願望待購' && b.location !== '售出'));
         const wishlistBooks = computed(() => books.value.filter(b => b.location === '願望待購'));
         const currentlyReadingBooks = computed(() => ownedBooks.value.filter(b => b.readingStatus === '閱讀中'));
 
+        // 功能 2：借閱中 vs 歸還歷史 徹底分流
+        const activeLoans = computed(() => libraryRecords.value.filter(r => r.status === '借閱中'));
+        const returnedHistory = computed(() => libraryRecords.value.filter(r => r.status === '已歸還'));
+
         const tabs = computed(() => [
           { id: 'home', label: '首頁', icon: '🏠' },
           { id: 'archive', label: '藏書縱覽', icon: '📚' },
-          { id: 'library', label: '圖書館', icon: '🏛️', badge: libraryRecords.value.length || null },
+          { id: 'library', label: '圖書館', icon: '🏛️', badge: activeLoans.value.length ? `${activeLoans.value.length}本借閱中` : null },
           { id: 'wishlist', label: '願望清單', icon: '🔖', badge: wishlistBooks.value.length || null },
           { id: 'add', label: '新書入藏', icon: '➕' },
           { id: 'blog', label: '書房手札', icon: '✍️' }
@@ -983,6 +1095,7 @@
           return 'bg-red-400';
         });
 
+        // 雲端資料拉取
         const fetchFromCloud = async () => {
           syncState.value = 'connecting';
           try {
@@ -1018,6 +1131,7 @@
           }
         };
 
+        // 雲端儲存
         const saveToCloud = async (isSilent = false) => {
           if (books.value.length < 10) {
             alert('書籍數量過少，為保護資料庫安全禁止送出。');
@@ -1059,27 +1173,43 @@
           }
         };
 
+        // 功能 3：登記新借閱
         const addLibraryRecord = () => {
           if (!newLib.value.title) return;
           const today = new Date().toISOString().slice(0, 10);
           libraryRecords.value.unshift({
             id: Date.now(),
             title: newLib.value.title,
+            author: newLib.value.author || '',
             callNo: newLib.value.callNo || '',
-            barcode: newLib.value.barcode || '',
             borrowDate: newLib.value.borrowDate || today,
+            dueDate: newLib.value.dueDate || '',
+            renewRange: newLib.value.renewRange || '',
             returnDate: '',
             status: '借閱中'
           });
           hasUnsavedChanges.value = true;
           localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value));
-          newLib.value = { title: '', callNo: '', barcode: '', borrowDate: '' };
+          newLib.value = { title: '', author: '', callNo: '', borrowDate: '', dueDate: '', renewRange: '' };
           showAddLib.value = false;
-          alert('✓ 借閱紀錄已登記！請記得點擊「💾 儲存」備份至雲端。');
+          alert('✓ 新借書籍登記完成！右下角浮動鍵可隨時點擊同步雲端。');
+        };
+
+        // 標記已還（自動移入借閱歷史）
+        const markAsReturned = (id) => {
+          const target = libraryRecords.value.find(r => r.id === id);
+          if (target) {
+            const today = new Date().toISOString().slice(0, 10);
+            target.returnDate = today;
+            target.status = '已歸還';
+            hasUnsavedChanges.value = true;
+            localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value));
+            alert(`✓ 《${target.title}》已完成歸還，並移入借閱歷史紀錄！`);
+          }
         };
 
         const deleteLibRecord = (id) => {
-          if (confirm('確定移除此筆借閱紀錄嗎？')) {
+          if (confirm('確定移除此筆紀錄嗎？')) {
             libraryRecords.value = libraryRecords.value.filter(r => r.id !== id);
             hasUnsavedChanges.value = true;
             localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value));
@@ -1090,7 +1220,7 @@
           books.value.unshift({
             id: Date.now(),
             title: rec.title,
-            author: '',
+            author: rec.author || '',
             publisher: '',
             source: '圖書館讀過想收藏',
             location: '願望待購',
@@ -1102,8 +1232,8 @@
           alert(`✓ 已將《${rec.title}》收入願望清單！逛書店時可以找來買囉。`);
         };
 
-        const filteredLibraryRecords = computed(() => {
-          return libraryRecords.value.filter(r => {
+        const filteredReturnedHistory = computed(() => {
+          return returnedHistory.value.filter(r => {
             const matchYear = filterLibYear.value === 'all' || (r.borrowDate && r.borrowDate.includes(filterLibYear.value));
             const q = libSearchQuery.value.toLowerCase().trim();
             const matchQuery = !q || r.title.toLowerCase().includes(q) || (r.callNo && r.callNo.toLowerCase().includes(q));
@@ -1111,6 +1241,7 @@
           });
         });
 
+        // 願望清單
         const addWishItem = () => {
           if (!newWish.value.title) return;
           books.value.unshift({
@@ -1185,6 +1316,7 @@
           alert('恭喜又讀完一本書！已更新閱讀進度。');
         };
 
+        // 雙資料庫條碼查詢
         const fetchBookByISBN = async (isbn) => {
           const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
           if (!cleanIsbn) return;
@@ -1325,7 +1457,7 @@
           localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
           newPost.value = { title: '', content: '' };
           showNewPost.value = false;
-          alert('✓ 隨筆已發布！請記得點擊右上角「💾 儲存變更」同步備份至雲端。');
+          alert('✓ 隨筆已發布！請記得點擊右下角「💾 儲存」同步備份至雲端。');
         };
 
         const deletePost = (id) => {
@@ -1360,7 +1492,7 @@
           hasUnsavedChanges.value = true;
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
 
-          alert(`✓ 成功收錄《${newBook.value.title}》至藏書縱覽！請記得點擊右上角「💾 儲存」備份。`);
+          alert(`✓ 成功收錄《${newBook.value.title}》至藏書縱覽！請記得點擊右下角「💾 儲存」備份。`);
 
           newBook.value = {
             title: '',
@@ -1397,7 +1529,6 @@
           return 'bg-sand-100 text-nordic-muted';
         };
 
-        // 核心修復：藏書縱覽顯示基準為 allArchiveBooks，正確回應「售出」篩選
         const filteredArchiveBooks = computed(() => {
           return allArchiveBooks.value.filter(b => {
             const matchLoc = filterLocation.value === 'all' || b.location === filterLocation.value;
@@ -1500,7 +1631,7 @@
               localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
               localStorage.setItem(POSTS_KEY, JSON.stringify(posts.value));
               localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value));
-              alert('匯入成功！請點擊「💾 儲存變更」以寫入雲端。');
+              alert('匯入成功！請點擊右下角「💾 儲存」以寫入雲端。');
             } catch (err) {
               alert('JSON 格式錯誤，請確認檔案內容');
             }
@@ -1524,7 +1655,8 @@
           currentTab, tabs, books, newBook, filterLocation, filterRead, searchQuery,
           showDashboard, allSourceOptions, locationFilters, readFilters,
           filteredArchiveBooks, wishlistBooks, currentlyReadingBooks, stats, analytics,
-          libraryRecords, filteredLibraryRecords, showAddLib, filterLibYear, libSearchQuery, newLib, addLibraryRecord, deleteLibRecord, copyLibToWishlist,
+          libraryRecords, activeLoans, returnedHistory, filteredReturnedHistory,
+          showAddLib, filterLibYear, libSearchQuery, newLib, addLibraryRecord, markAsReturned, deleteLibRecord, copyLibToWishlist,
           posts, showNewPost, newPost, addPost, deletePost,
           showAddWish, newWish, addWishItem,
           syncState, syncStatusText, syncStatusClass,
