@@ -93,87 +93,64 @@
       </button>
     </aside>
 
-    <!-- ==================== 分頁 1：首頁 (Landing Page) ==================== -->
-    <main v-if="currentTab === 'home'" class="space-y-8 animate-fadeIn">
-      <section class="bg-white rounded-3xl p-6 sm:p-10 border border-nordic-border shadow-sm text-center relative overflow-hidden">
-        <div class="max-w-xl mx-auto space-y-3">
-          <span class="text-xs tracking-widest text-nordic-muted uppercase font-semibold">Welcome to the study</span>
-          <h2 class="text-3xl sm:text-4xl font-serif-title font-bold text-nordic-dark leading-tight">
-            讀書人的事，能算偷麼？
+    <!-- ==================== 分頁 1：全新首頁 (Landing Page) ==================== -->
+    <main v-if="currentTab === 'home'" class="animate-fadeIn flex flex-col items-center justify-center min-h-[75vh]">
+      
+      <!-- 迎賓區塊 -->
+      <section class="w-full bg-white rounded-[2.5rem] p-10 sm:p-16 border border-nordic-border shadow-sm text-center relative overflow-hidden flex flex-col items-center">
+        <!-- 裝飾背景 -->
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-sand-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
+        
+        <div class="relative z-10 space-y-4 max-w-2xl mx-auto">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sand-50 border border-sand-200 text-[10px] uppercase tracking-widest text-nordic-muted font-bold mb-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Personal Digital Library
+          </div>
+          <h2 class="text-4xl sm:text-5xl md:text-6xl font-serif-title font-bold text-nordic-dark leading-tight tracking-tight">
+            長衫客書坊
           </h2>
-          <p class="text-xs sm:text-sm text-nordic-muted font-serif-title leading-relaxed pt-1">
-            山居有竹，隨意展卷。這裡記錄著散落在老家與租屋處的實體藏書、未讀的期待、以及在圖書館借閱沉思的思想軌跡。
+          <p class="text-sm sm:text-base text-nordic-muted font-serif-title leading-relaxed pt-2">
+            讀書人的事，能算偷麼？<br class="hidden sm:block">山居有竹，隨意展卷。這裡記錄著你散落在老家與租屋處的實體藏書，以及在圖書館的思想軌跡。
           </p>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 max-w-2xl mx-auto text-left">
-          <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70 cursor-pointer hover:bg-sand-100 transition"
-               @click="currentTab = 'archive'; filterLocation = 'all'">
-            <div class="text-[11px] text-nordic-muted">實體藏書</div>
-            <div class="text-xl font-bold text-nordic-dark mt-0.5">{{ stats.totalOwned }} <span class="text-xs font-normal text-nordic-muted">冊</span></div>
+        <!-- 數據摘要卡片 -->
+        <div class="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 w-full max-w-4xl">
+          <div class="bg-sand-50/90 p-5 rounded-3xl border border-sand-200/80 backdrop-blur-sm cursor-pointer hover:bg-sand-100 transition transform hover:-translate-y-1" @click="currentTab = 'archive'">
+            <div class="text-xs text-nordic-slate font-medium mb-1">實體總藏書</div>
+            <div class="text-3xl font-bold text-nordic-dark font-mono">{{ stats.totalOwned }}</div>
           </div>
-          <div class="bg-blue-50/80 p-3.5 rounded-2xl border border-blue-100 cursor-pointer hover:bg-blue-100/60 transition"
-               @click="currentTab = 'library'">
-            <div class="text-[11px] text-blue-800 font-medium">租借中</div>
-            <div class="text-xl font-bold text-blue-900 mt-0.5">{{ activeLoans.length }} <span class="text-xs font-normal text-nordic-muted">冊翻閱中</span></div>
+          <div class="bg-blue-50/90 p-5 rounded-3xl border border-blue-100/80 backdrop-blur-sm cursor-pointer hover:bg-blue-100 transition transform hover:-translate-y-1" @click="currentTab = 'library'">
+            <div class="text-xs text-blue-800 font-medium mb-1">圖書館借閱中</div>
+            <div class="text-3xl font-bold text-blue-900 font-mono">{{ activeLoans.length }}</div>
           </div>
-          <div class="bg-sand-50/80 p-3.5 rounded-2xl border border-nordic-border/70">
-            <div class="text-[11px] text-[#556951] font-medium">老家 / 租屋</div>
-            <div class="text-xl font-bold text-nordic-dark mt-0.5">{{ stats.home }} <span class="text-xs font-normal text-nordic-muted">/ {{ stats.rental }}</span></div>
+          <div class="bg-emerald-50/90 p-5 rounded-3xl border border-emerald-100/80 backdrop-blur-sm cursor-pointer hover:bg-emerald-100 transition transform hover:-translate-y-1" @click="currentTab = 'sources'">
+            <div class="text-xs text-emerald-800 font-medium mb-1">走訪淘書點</div>
+            <div class="text-3xl font-bold text-emerald-900 font-mono">{{ sourceGroups.length }}</div>
           </div>
-          <div class="bg-purple-50/60 p-3.5 rounded-2xl border border-purple-100 cursor-pointer hover:bg-purple-100/60 transition"
-               @click="currentTab = 'wishlist'">
-            <div class="text-[11px] text-purple-700 font-medium">願望清單</div>
-            <div class="text-xl font-bold text-purple-700 mt-0.5">{{ stats.wishlist }} <span class="text-xs font-normal text-nordic-muted">冊待購</span></div>
+          <div class="bg-purple-50/90 p-5 rounded-3xl border border-purple-100/80 backdrop-blur-sm cursor-pointer hover:bg-purple-100 transition transform hover:-translate-y-1" @click="currentTab = 'wishlist'">
+            <div class="text-xs text-purple-800 font-medium mb-1">願望清單</div>
+            <div class="text-3xl font-bold text-purple-900 font-mono">{{ stats.wishlist }}</div>
           </div>
         </div>
 
-        <div class="flex flex-wrap justify-center items-center gap-3 mt-8 text-xs font-medium">
-          <button @click="currentTab = 'archive'" class="bg-nordic-dark hover:bg-nordic-slate text-white px-5 py-2.5 rounded-xl shadow-sm transition">
-            📖 瀏覽藏書縱覽
-          </button>
-          <button @click="currentTab = 'library'" class="bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 px-5 py-2.5 rounded-xl transition">
-            🏛️ 圖書館專區 ({{ activeLoans.length }} 借閱中)
-          </button>
-          <button @click="currentTab = 'wishlist'" class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-5 py-2.5 rounded-xl transition">
-            🔖 願望清單
-          </button>
-        </div>
-      </section>
-
-      <!-- 正在翻閱區 (實體藏書) -->
-      <section class="space-y-3">
-        <div class="flex items-center justify-between">
-          <h3 class="font-serif-title font-bold text-lg text-nordic-dark flex items-center gap-2">
-            <span>📖</span> 實體藏書 · 正在翻閱
-          </h3>
-          <span class="text-xs text-nordic-muted">共 {{ currentlyReadingBooks.length }} 冊</span>
-        </div>
-
-        <div v-if="currentlyReadingBooks.length === 0" class="bg-white rounded-2xl p-8 text-center text-nordic-muted text-xs border border-nordic-border">
-          目前沒有標記為「閱讀中」的實體書籍，去書架上挑一本開始吧！
-        </div>
-
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="b in currentlyReadingBooks" :key="b.id" 
-               class="bg-white rounded-2xl p-5 border border-nordic-border shadow-sm flex flex-col justify-between space-y-4 hover:border-nordic-warmtaupe transition">
-            <div>
-              <div class="flex items-center justify-between text-xs text-nordic-muted mb-2">
-                <span class="bg-[#F2EADB] text-[#8C6228] px-2 py-0.5 rounded-md font-semibold text-[11px]">閱讀中</span>
-                <span>{{ b.location }} · {{ b.type }}</span>
-              </div>
-              <h4 class="font-serif-title font-bold text-lg text-nordic-dark leading-snug">{{ b.title }}</h4>
-              <p class="text-xs text-nordic-muted mt-1">{{ b.author }} <span v-if="b.publisher">/ {{ b.publisher }}</span></p>
-            </div>
-            
-            <div class="pt-3 border-t border-sand-100 flex items-center justify-between">
-              <span class="text-[11px] text-nordic-muted">購於 {{ b.source || '未記錄' }}</span>
-              <button @click="markAsFinished(b.id)" class="text-xs bg-sand-100 hover:bg-sand-200 text-nordic-slate px-3 py-1 rounded-lg transition font-medium">
-                ✓ 標記讀完
-              </button>
-            </div>
+        <!-- 快速行動中樞 (Action Hub) -->
+        <div class="relative z-10 w-full max-w-3xl mt-12 pt-10 border-t border-sand-100">
+          <div class="text-xs font-bold text-nordic-slate uppercase tracking-widest mb-6">Quick Actions</div>
+          <div class="flex flex-wrap justify-center items-center gap-4 text-sm font-semibold">
+            <button @click="currentTab = 'add'" class="bg-nordic-dark hover:bg-nordic-slate text-white px-6 py-4 rounded-2xl shadow-lg transition flex items-center gap-2 transform hover:scale-105">
+              <span class="text-xl">➕</span> 連續掃碼入庫
+            </button>
+            <button @click="currentTab = 'archive'" class="bg-white hover:bg-sand-50 text-nordic-dark border border-nordic-border px-6 py-4 rounded-2xl shadow-sm transition flex items-center gap-2">
+              <span class="text-xl">📚</span> 瀏覽藏書縱覽
+            </button>
+            <button @click="currentTab = 'library'" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl shadow-lg transition flex items-center gap-2 transform hover:scale-105">
+              <span class="text-xl">🏛️</span> 登記圖書館
+            </button>
           </div>
         </div>
+
       </section>
     </main>
 
@@ -214,36 +191,74 @@
 
       <!-- 數據儀表板 -->
       <section v-if="showDashboard" class="bg-white rounded-2xl p-4 sm:p-6 border border-nordic-border shadow-sm space-y-4">
+        
+        <!-- 首層核心指標 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="p-3 bg-gradient-to-br from-sand-50 to-sand-100 rounded-xl border border-sand-200 text-center">
+            <div class="text-[10px] text-nordic-muted font-bold mb-1">自有藏書估算市值</div>
+            <div class="text-xl font-mono font-bold text-nordic-dark">${{ totalAssetValue.toLocaleString() }}</div>
+          </div>
+          <div class="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl border border-emerald-100 text-center">
+            <div class="text-[10px] text-emerald-800/80 font-bold mb-1">閱讀完畢率</div>
+            <div class="text-xl font-mono font-bold text-emerald-900">{{ analytics.readRate }}%</div>
+          </div>
+          <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-100 text-center">
+            <div class="text-[10px] text-blue-800/80 font-bold mb-1">待讀積讀率</div>
+            <div class="text-xl font-mono font-bold text-blue-900">{{ 100 - analytics.readRate - analytics.readingRate }}%</div>
+          </div>
+          <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl border border-purple-100 text-center">
+            <div class="text-[10px] text-purple-800/80 font-bold mb-1">地域流動 (家/租)</div>
+            <div class="text-xl font-mono font-bold text-purple-900">{{ stats.home }} / {{ stats.rental }}</div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
             <div class="flex justify-between items-center mb-1.5 text-xs font-semibold">
-              <span class="text-nordic-slate">📖 實體藏書讀畢率</span>
-              <span class="text-nordic-sage font-bold">{{ analytics.readRate }}%</span>
+              <span class="text-nordic-slate">📖 閱讀進度漏斗</span>
+              <span class="text-nordic-muted text-[10px]">總計 {{ stats.totalOwned }} 冊</span>
             </div>
             <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
-              <div :style="{ width: analytics.readRate + '%' }" class="bg-nordic-sage transition-all duration-500"></div>
+              <div :style="{ width: analytics.readRate + '%' }" class="bg-emerald-600 transition-all duration-500"></div>
               <div :style="{ width: analytics.readingRate + '%' }" class="bg-[#D9A75E] transition-all duration-500"></div>
             </div>
-            <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
+            <div class="flex justify-between text-[11px] text-nordic-muted mt-2 font-mono">
               <span>完畢: {{ stats.finished }}</span>
               <span>閱讀中: {{ stats.reading }}</span>
               <span>待讀: {{ stats.unread }}</span>
-              <span>已售出: {{ stats.sold }}</span>
+              <span>售出: {{ stats.sold }}</span>
             </div>
           </div>
 
           <div class="bg-sand-50/70 p-3.5 rounded-xl border border-nordic-border/60">
             <div class="flex justify-between items-center mb-1.5 text-xs font-semibold">
-              <span class="text-nordic-slate">🏷️ 新書 / 二手比率</span>
-              <span class="text-nordic-muted">二手 {{ analytics.usedPercent }}%</span>
+              <span class="text-nordic-slate">🏷️ 藏書新舊佔比</span>
+              <span class="text-nordic-muted text-[10px]">新 {{ analytics.newPercent }}% / 舊 {{ analytics.usedPercent }}%</span>
             </div>
             <div class="w-full bg-sand-200 h-2 rounded-full overflow-hidden flex">
               <div :style="{ width: analytics.newPercent + '%' }" class="bg-nordic-dark transition-all duration-500"></div>
               <div :style="{ width: analytics.usedPercent + '%' }" class="bg-nordic-warmtaupe transition-all duration-500"></div>
             </div>
-            <div class="flex justify-between text-[11px] text-nordic-muted mt-2">
-              <span>新書: {{ analytics.newCount }} ({{ analytics.newPercent }}%)</span>
-              <span>二手: {{ analytics.usedCount }} ({{ analytics.usedPercent }}%)</span>
+            <div class="flex justify-between text-[11px] text-nordic-muted mt-2 font-mono">
+              <span>新書: {{ analytics.newCount }}</span>
+              <span>二手: {{ analytics.usedCount }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          <div class="space-y-1.5">
+            <h4 class="text-xs font-bold text-nordic-slate border-b border-sand-100 pb-1 mb-2">✍️ 最常讀作家排行榜</h4>
+            <div v-for="(a, i) in analytics.topAuthors" :key="a.name" class="flex justify-between items-center text-xs py-1 px-2 rounded-lg bg-sand-50/50">
+              <div class="flex items-center gap-2"><span class="text-gray-400 font-mono text-[10px]">{{ i+1 }}</span><span class="truncate max-w-[130px] font-bold">{{ a.name }}</span></div>
+              <span class="font-mono text-nordic-muted bg-white px-1.5 py-0.5 rounded border border-sand-100">{{ a.count }}冊</span>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <h4 class="text-xs font-bold text-nordic-slate border-b border-sand-100 pb-1 mb-2">🏛️ 出版社與書系分佈</h4>
+            <div v-for="(p, i) in analytics.topPublishers" :key="p.name" class="flex justify-between items-center text-xs py-1 px-2 rounded-lg bg-sand-50/50">
+              <div class="flex items-center gap-2"><span class="text-gray-400 font-mono text-[10px]">{{ i+1 }}</span><span class="truncate max-w-[130px] font-bold">{{ p.name }}</span></div>
+              <span class="font-mono text-nordic-muted bg-white px-1.5 py-0.5 rounded border border-sand-100">{{ p.count }}冊</span>
             </div>
           </div>
         </div>
@@ -2612,62 +2627,103 @@
             newBook.value.title = cached.title;
             newBook.value.author = cached.author;
             newBook.value.publisher = cached.publisher;
-            alert(`✓ [快取秒開] 成功帶入書籍：${cached.title}`);
             return;
           }
 
           const hasChinese = (str) => /[\u4e00-\u9fa5]/.test(str);
-          const isTaiwanIsbn = cleanIsbn.startsWith('978986') || cleanIsbn.startsWith('978626') || cleanIsbn.startsWith('957');
-
-          // 1. 博客來爬蟲 (透過 AllOrigins CORS proxy) - 解決拼音與找不到中文書的問題
-          const fetchBooksComTw = async () => {
-            const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://search.books.com.tw/search/query/key/' + cleanIsbn + '/cat/all')}`;
+          
+          const fetchGoogleBooks = async () => {
+            const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
             const res = await fetch(url);
             const data = await res.json();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data.contents, "text/html");
-            
-            const titleEl = doc.querySelector('.box_1 h4 a') || doc.querySelector('table tbody tr td h4 a') || doc.querySelector('.table-search-new h4 a');
-            if (!titleEl) throw new Error('博客來查無此書');
-            const title = titleEl.getAttribute('title') || titleEl.innerText;
-            
-            const authorEls = doc.querySelectorAll('p.author a');
-            let author = '';
-            if (authorEls.length > 0) {
-               author = authorEls[0].getAttribute('title') || authorEls[0].innerText;
+            if (data.items && data.items.length > 0) {
+              let item = data.items.find(it => it.volumeInfo.language === 'zh-TW' || it.volumeInfo.language === 'zh') || data.items[0];
+              let title = item.volumeInfo.title || '';
+              if (!hasChinese(title) && /[a-zA-Z]/.test(title) && (cleanIsbn.startsWith('978986') || cleanIsbn.startsWith('978626'))) {
+                throw new Error("Google Books returned Pinyin for TW book.");
+              }
+              return {
+                title: title,
+                author: item.volumeInfo.authors ? item.volumeInfo.authors.join('、') : '',
+                publisher: item.volumeInfo.publisher || ''
+              };
             }
+            throw new Error("Not found in Google Books");
+          };
+
+          const fetchBooksComTw = async () => {
+            // Try multiple CORS proxies for books.com.tw
+            const targetUrl = encodeURIComponent(`https://search.books.com.tw/search/query/key/${cleanIsbn}/cat/all`);
+            const proxies = [
+              `https://api.allorigins.win/get?url=${targetUrl}`,
+              `https://corsproxy.io/?${targetUrl}`
+            ];
             
+            for (let proxy of proxies) {
+              try {
+                const res = await fetch(proxy);
+                const data = await res.json();
+                const htmlText = data.contents || data; // allorigins uses contents, corsproxy returns raw
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, "text/html");
+                const titleEl = doc.querySelector('.box_1 h4 a') || doc.querySelector('table tbody tr td h4 a');
+                if (titleEl) {
+                  const title = titleEl.getAttribute('title') || titleEl.innerText;
+                  const authorEls = doc.querySelectorAll('p.author a');
+                  const author = authorEls.length > 0 ? (authorEls[0].getAttribute('title') || authorEls[0].innerText) : '';
+                  return { title: title.trim(), author: author.trim(), publisher: '' };
+                }
+              } catch (e) {
+                console.warn("Proxy failed", proxy);
+              }
+            }
+            throw new Error("Not found in Books.com.tw");
+          };
+
+          const fetchOpenLibrary = async () => {
+            const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&jscmd=data&format=json`);
+            const data = await res.json();
+            const bookData = data[`ISBN:${cleanIsbn}`];
+            if (bookData) {
+              return {
+                title: bookData.title || '',
+                author: bookData.authors ? bookData.authors.map(a => a.name).join('、') : '',
+                publisher: bookData.publishers ? bookData.publishers[0].name : ''
+              };
+            }
+            throw new Error("Not found in Open Library");
+          };
+
+          try {
+            // Loading state
+            newBook.value.title = '查詢中...';
             
-        const sourceGroups = computed(() => {
-          const groups = {};
-          ownedBooks.value.forEach(b => {
-            const s = b.source || '未記錄';
-            if (!groups[s]) groups[s] = [];
-            groups[s].push(b);
-          });
-          return Object.entries(groups).map(([name, items]) => ({
-            name,
-            count: items.length,
-            items
-          })).sort((a, b) => b.count - a.count);
-        });
+            let result = null;
+            try {
+              // Try Taiwan Bookstore first for 978986/978626, otherwise Google
+              if (cleanIsbn.startsWith('978986') || cleanIsbn.startsWith('978626') || cleanIsbn.startsWith('957')) {
+                 try { result = await fetchBooksComTw(); } catch(e) { result = await fetchGoogleBooks(); }
+              } else {
+                 try { result = await fetchGoogleBooks(); } catch(e) { result = await fetchBooksComTw(); }
+              }
+            } catch (e) {
+               result = await fetchOpenLibrary();
+            }
 
-        const totalAssetValue = computed(() => {
-          let val = 0;
-          ownedBooks.value.forEach(b => {
-             // 簡單估算: 新書以平均 380 計算, 二手以 180 計算
-             val += (b.type === '新' ? 380 : 180);
-          });
-          return val;
-        });
-
-        const activeSource = ref(null);
-
-        return { recentIntake, sourceGroups, totalAssetValue, activeSource, 
-              title: title.trim(),
-              author: author.trim(),
-              publisher: ''
-            };
+            if (result && result.title) {
+              newBook.value.title = result.title;
+              newBook.value.author = result.author;
+              newBook.value.publisher = result.publisher;
+              isbnCache.set(cleanIsbn, result);
+            } else {
+              newBook.value.title = '';
+              alert(`ISBN：${cleanIsbn} 查無資料，請手動輸入。`);
+            }
+          } catch (err) {
+            newBook.value.title = '';
+            alert(`ISBN：${cleanIsbn} 查詢失敗，請手動輸入。`);
+          }
+        };
           };
 
           // 2. Google Books API
