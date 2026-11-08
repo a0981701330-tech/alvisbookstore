@@ -613,7 +613,59 @@
       </div>
     </main>
 
-    <!-- ==================== 分頁 5：正式新書入藏 & 條碼掃描 (Add & Scan) ==================== -->
+    
+    <!-- ==================== 分頁 7：淘書地圖誌 (Sources) ==================== -->
+    <main v-if="currentTab === 'sources'" class="space-y-6 animate-fadeIn">
+      <div class="bg-gradient-to-br from-sand-100 to-sand-200 rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm flex flex-col sm:flex-row justify-between gap-4">
+        <div>
+          <h3 class="font-serif-title font-bold text-xl text-nordic-dark flex items-center gap-2"><span>🗺️</span> 淘書地圖誌 · Acquisition Log</h3>
+          <p class="text-xs text-nordic-muted mt-1.5 leading-relaxed">
+            走訪過的實體獨立書店、網路平台與舊書攤。<br>點擊地點，回顧你在那裡與哪些書相遇。
+          </p>
+        </div>
+        <div class="text-right flex flex-col items-end justify-center">
+          <div class="text-3xl font-bold text-nordic-dark font-mono">{{ sourceGroups.length }}</div>
+          <div class="text-[10px] text-nordic-muted uppercase tracking-widest mt-0.5">Places Visited</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+        <div v-for="g in sourceGroups" :key="g.name" 
+             @click="activeSource = activeSource === g.name ? null : g.name"
+             :class="activeSource === g.name ? 'bg-nordic-dark text-white shadow-md' : 'bg-white text-nordic-dark hover:bg-sand-50 hover:border-nordic-warmtaupe'"
+             class="p-4 rounded-2xl border border-nordic-border cursor-pointer transition flex flex-col justify-between h-24">
+          <div class="font-bold text-sm truncate" :class="activeSource === g.name ? 'text-white' : 'text-nordic-slate'">{{ g.name }}</div>
+          <div class="flex justify-between items-end">
+            <span class="text-2xl font-mono leading-none" :class="activeSource === g.name ? 'text-sand-100' : 'text-nordic-dark'">{{ g.count }}</span>
+            <span class="text-[10px] uppercase tracking-wider" :class="activeSource === g.name ? 'text-sand-200' : 'text-nordic-muted'">冊</span>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="activeSource" class="bg-white rounded-2xl border border-nordic-border shadow-sm p-4 sm:p-6 mt-4 animate-fadeIn">
+        <div class="flex justify-between items-center border-b border-sand-100 pb-3 mb-4">
+          <h4 class="font-serif-title font-bold text-lg text-nordic-dark">來自「{{ activeSource }}」的藏書</h4>
+          <button @click="activeSource = null" class="text-xs bg-sand-100 px-3 py-1.5 rounded-lg text-nordic-slate hover:bg-sand-200">✕ 關閉</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div v-for="b in sourceGroups.find(x => x.name === activeSource).items" :key="b.id" class="flex gap-3 p-3 bg-sand-50/50 rounded-xl border border-sand-100">
+            <div class="flex flex-col justify-between flex-1">
+              <div>
+                <div class="text-[10px] text-nordic-muted mb-0.5">{{ b.type }} · {{ b.location }}</div>
+                <div class="font-bold text-sm text-nordic-dark leading-snug">{{ b.title }}</div>
+              </div>
+              <div class="text-xs text-nordic-muted mt-2 truncate">{{ b.author }}</div>
+            </div>
+            <div class="self-end text-[10px] px-2 py-1 rounded bg-white border border-sand-200 font-medium" :class="b.readingStatus === '閱讀完畢' ? 'text-emerald-700' : 'text-amber-700'">
+              {{ b.readingStatus }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 分頁 5： -->
+<!-- ==================== 分頁 5：正式新書入藏 & 條碼掃描 (Add & Scan) ==================== -->
     <main v-if="currentTab === 'add'" class="space-y-6 animate-fadeIn">
       <section class="bg-white rounded-3xl p-6 sm:p-8 border border-nordic-border shadow-sm space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-sand-100 gap-3">
@@ -701,6 +753,19 @@
             </button>
           </div>
         </form>
+
+        <div v-if="recentIntake.length > 0" class="mt-8 pt-6 border-t border-sand-100">
+          <h4 class="text-xs font-bold text-nordic-slate mb-3 flex items-center gap-1.5"><span>📚</span> 剛剛收錄成功隊列 (Recent Intake)</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div v-for="b in recentIntake" :key="b.id" class="bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl flex justify-between items-center text-xs">
+              <div class="truncate">
+                <span class="font-bold text-emerald-900 truncate block">{{ b.title }}</span>
+                <span class="text-emerald-700/80 mt-0.5 block truncate">{{ b.source }} · {{ b.location }}</span>
+              </div>
+              <span class="text-emerald-600 bg-emerald-100 px-2 py-1 rounded-lg font-mono">已入庫</span>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -2209,7 +2274,33 @@
         const libStats = computed(() => {
           const totalVal = libraryRecords.value.reduce((sum, r) => sum + (r.val || 420), 0);
           const semesterTuition = 20000;
-          return {
+          
+        const sourceGroups = computed(() => {
+          const groups = {};
+          ownedBooks.value.forEach(b => {
+            const s = b.source || '未記錄';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push(b);
+          });
+          return Object.entries(groups).map(([name, items]) => ({
+            name,
+            count: items.length,
+            items
+          })).sort((a, b) => b.count - a.count);
+        });
+
+        const totalAssetValue = computed(() => {
+          let val = 0;
+          ownedBooks.value.forEach(b => {
+             // 簡單估算: 新書以平均 380 計算, 二手以 180 計算
+             val += (b.type === '新' ? 380 : 180);
+          });
+          return val;
+        });
+
+        const activeSource = ref(null);
+
+        return { recentIntake, sourceGroups, totalAssetValue, activeSource, 
             totalSavedValue: totalVal,
             roiPercent: Math.round((totalVal / semesterTuition) * 100),
             semesterEquivalent: (totalVal / semesterTuition).toFixed(1)
@@ -2256,8 +2347,8 @@
         const tabs = computed(() => [
           { id: 'home', label: '首頁', icon: '🏠' },
           { id: 'archive', label: '藏書縱覽', icon: '📚' },
-          { id: 'library', label: '圖書館', icon: '🏛️', badge: activeLoans.value.length ? `${activeLoans.value.length}本借閱中` : null },
-          { id: 'wishlist', label: '願望清單', icon: '🔖', badge: wishlistBooks.value.length || null },
+          { id: 'library', label: '圖書館', icon: '🏛️', badge: activeLoans.value.length ? `${activeLoans.value.length}借閱中` : null },
+          { id: 'sources', label: '淘書地圖', icon: '🗺️' },
           { id: 'add', label: '新書入藏', icon: '➕' },
           { id: 'blog', label: '書房手札', icon: '✍️' }
         ]);
@@ -2521,13 +2612,68 @@
             newBook.value.title = cached.title;
             newBook.value.author = cached.author;
             newBook.value.publisher = cached.publisher;
-            alert(`✓ [快取秒開] 成功帶入繁體書籍：${cached.title}`);
+            alert(`✓ [快取秒開] 成功帶入書籍：${cached.title}`);
             return;
           }
 
+          const hasChinese = (str) => /[\u4e00-\u9fa5]/.test(str);
+          const isTaiwanIsbn = cleanIsbn.startsWith('978986') || cleanIsbn.startsWith('978626') || cleanIsbn.startsWith('957');
+
+          // 1. 博客來爬蟲 (透過 AllOrigins CORS proxy) - 解決拼音與找不到中文書的問題
+          const fetchBooksComTw = async () => {
+            const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://search.books.com.tw/search/query/key/' + cleanIsbn + '/cat/all')}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, "text/html");
+            
+            const titleEl = doc.querySelector('.box_1 h4 a') || doc.querySelector('table tbody tr td h4 a') || doc.querySelector('.table-search-new h4 a');
+            if (!titleEl) throw new Error('博客來查無此書');
+            const title = titleEl.getAttribute('title') || titleEl.innerText;
+            
+            const authorEls = doc.querySelectorAll('p.author a');
+            let author = '';
+            if (authorEls.length > 0) {
+               author = authorEls[0].getAttribute('title') || authorEls[0].innerText;
+            }
+            
+            
+        const sourceGroups = computed(() => {
+          const groups = {};
+          ownedBooks.value.forEach(b => {
+            const s = b.source || '未記錄';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push(b);
+          });
+          return Object.entries(groups).map(([name, items]) => ({
+            name,
+            count: items.length,
+            items
+          })).sort((a, b) => b.count - a.count);
+        });
+
+        const totalAssetValue = computed(() => {
+          let val = 0;
+          ownedBooks.value.forEach(b => {
+             // 簡單估算: 新書以平均 380 計算, 二手以 180 計算
+             val += (b.type === '新' ? 380 : 180);
+          });
+          return val;
+        });
+
+        const activeSource = ref(null);
+
+        return { recentIntake, sourceGroups, totalAssetValue, activeSource, 
+              title: title.trim(),
+              author: author.trim(),
+              publisher: ''
+            };
+          };
+
+          // 2. Google Books API
           const fetchGoogle = async () => {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
             const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&hl=zh-TW&country=TW`;
             const res = await fetch(url, { signal: controller.signal });
             clearTimeout(timeoutId);
@@ -2536,22 +2682,81 @@
             if (data.totalItems > 0 && data.items && data.items.length > 0) {
               const item = data.items.find(it => it.volumeInfo && (it.volumeInfo.language === 'zh-TW' || it.volumeInfo.language === 'zh')) || data.items[0];
               const info = item.volumeInfo;
+              
+              const title = info.title || '';
+              // 終極防呆：如果是台灣書，但 Google 給的書名全是羅馬拼音(無中文)，直接拒絕並丟給博客來處理！
+              if (isTaiwanIsbn && !hasChinese(title) && /[a-zA-Z]/.test(title)) {
+                 throw new Error('Google Books 回傳拼音，觸發強制阻擋，轉由台灣在地書庫查詢。');
+              }
 
-              return {
-                title: info.title || '',
+              
+        const sourceGroups = computed(() => {
+          const groups = {};
+          ownedBooks.value.forEach(b => {
+            const s = b.source || '未記錄';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push(b);
+          });
+          return Object.entries(groups).map(([name, items]) => ({
+            name,
+            count: items.length,
+            items
+          })).sort((a, b) => b.count - a.count);
+        });
+
+        const totalAssetValue = computed(() => {
+          let val = 0;
+          ownedBooks.value.forEach(b => {
+             // 簡單估算: 新書以平均 380 計算, 二手以 180 計算
+             val += (b.type === '新' ? 380 : 180);
+          });
+          return val;
+        });
+
+        const activeSource = ref(null);
+
+        return { recentIntake, sourceGroups, totalAssetValue, activeSource, 
+                title: title,
                 author: (info.authors && info.authors.join('、')) || '',
                 publisher: info.publisher || ''
               };
             }
-            throw new Error('Google Books 查無繁中資料');
+            throw new Error('Google Books 查無資料');
           };
 
+          // 3. Open Library API (外文書備用)
           const fetchOpenLibrary = async () => {
             const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&jscmd=data&format=json`);
             const data = await res.json();
             const bookData = data[`ISBN:${cleanIsbn}`];
             if (bookData) {
-              return {
+              
+        const sourceGroups = computed(() => {
+          const groups = {};
+          ownedBooks.value.forEach(b => {
+            const s = b.source || '未記錄';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push(b);
+          });
+          return Object.entries(groups).map(([name, items]) => ({
+            name,
+            count: items.length,
+            items
+          })).sort((a, b) => b.count - a.count);
+        });
+
+        const totalAssetValue = computed(() => {
+          let val = 0;
+          ownedBooks.value.forEach(b => {
+             // 簡單估算: 新書以平均 380 計算, 二手以 180 計算
+             val += (b.type === '新' ? 380 : 180);
+          });
+          return val;
+        });
+
+        const activeSource = ref(null);
+
+        return { recentIntake, sourceGroups, totalAssetValue, activeSource, 
                 title: bookData.title || '',
                 author: (bookData.authors && bookData.authors.map(a => a.name).join('、')) || '',
                 publisher: (bookData.publishers && bookData.publishers[0]?.name) || ''
@@ -2562,10 +2767,16 @@
 
           try {
             let result = null;
+            // 查詢策略：如果是台灣 ISBN，優先爬博客來確保抓到繁體中文；若不是，優先用 Google Books。
             try {
-              result = await fetchGoogle();
+              if (isTaiwanIsbn) {
+                try { result = await fetchBooksComTw(); } catch (e) { result = await fetchGoogle(); }
+              } else {
+                try { result = await fetchGoogle(); } catch (e) { result = await fetchBooksComTw(); }
+              }
             } catch (e) {
-              result = await fetchOpenLibrary();
+               // 若前兩道防線都失敗，嘗試 Open Library
+               result = await fetchOpenLibrary();
             }
 
             if (result && result.title) {
@@ -2573,14 +2784,12 @@
               newBook.value.author = result.author;
               newBook.value.publisher = result.publisher;
               isbnCache.set(cleanIsbn, result);
-              alert(`✓ 成功帶入繁體中文書籍：
-《${result.title}》
-作者：${result.author || '未提供'}`);
+              alert(`✓ 成功帶入繁體中文書籍：\n《${result.title}》\n作者：${result.author || '未提供'}`);
             } else {
-              alert(`已辨識 ISBN：${cleanIsbn}，線上資料庫暫無完整繁中資料，請手動補齊書名。`);
+              alert(`已辨識 ISBN：${cleanIsbn}，各大書庫暫無完整繁中資料，請手動補齊書名。`);
             }
           } catch (err) {
-            alert(`已辨識 ISBN：${cleanIsbn}，查詢失敗，請手動輸入書名。`);
+            alert(`已辨識 ISBN：${cleanIsbn}，查無資料或網路超時，請手動輸入書名。`);
           }
         };
 
@@ -2671,11 +2880,12 @@
 
         const formatIndex = (num) => num < 10 ? `0${num}` : `${num}`;
 
+        const recentIntake = ref([]);
         const addBook = () => {
           if (!newBook.value.title) return;
           if (newBook.value.source) registerNewSource(newBook.value.source);
 
-          books.value.push({
+          const added = {
             id: Date.now(),
             title: newBook.value.title,
             author: newBook.value.author,
@@ -2684,24 +2894,28 @@
             location: newBook.value.location,
             type: newBook.value.type,
             readingStatus: newBook.value.readingStatus || '未讀'
-          });
+          };
+
+          books.value.unshift(added); // 最新加的放最前面
+          recentIntake.value.unshift(added);
+          if(recentIntake.value.length > 5) recentIntake.value.pop();
 
           hasUnsavedChanges.value = true;
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
 
-          alert(`✓ 成功收錄《${newBook.value.title}》至藏書縱覽！請記得點擊右下角「💾 儲存」備份。`);
+          alert(`✓ 成功收錄《${newBook.value.title}》！請繼續掃描或輸入下一本。`);
 
           newBook.value = {
             title: '',
             author: '',
             publisher: '',
-            source: '',
-            location: '在家',
+            source: newBook.value.source, // 保留原來源，方便同一批書登記
+            location: newBook.value.location,
             type: '新',
             readingStatus: '未讀'
           };
           manualIsbn.value = '';
-          currentTab.value = 'archive';
+          // 移除跳轉，停留在登記頁面
         };
 
         const deleteBook = (id) => {
@@ -2787,7 +3001,33 @@
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
 
-          return {
+          
+        const sourceGroups = computed(() => {
+          const groups = {};
+          ownedBooks.value.forEach(b => {
+            const s = b.source || '未記錄';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push(b);
+          });
+          return Object.entries(groups).map(([name, items]) => ({
+            name,
+            count: items.length,
+            items
+          })).sort((a, b) => b.count - a.count);
+        });
+
+        const totalAssetValue = computed(() => {
+          let val = 0;
+          ownedBooks.value.forEach(b => {
+             // 簡單估算: 新書以平均 380 計算, 二手以 180 計算
+             val += (b.type === '新' ? 380 : 180);
+          });
+          return val;
+        });
+
+        const activeSource = ref(null);
+
+        return { recentIntake, sourceGroups, totalAssetValue, activeSource, 
             readRate: Math.round((finished / total) * 100),
             readingRate: Math.round((reading / total) * 100),
             newCount: newBooks,
@@ -2848,7 +3088,33 @@
           }
         };
 
-        return {
+        
+        const sourceGroups = computed(() => {
+          const groups = {};
+          ownedBooks.value.forEach(b => {
+            const s = b.source || '未記錄';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push(b);
+          });
+          return Object.entries(groups).map(([name, items]) => ({
+            name,
+            count: items.length,
+            items
+          })).sort((a, b) => b.count - a.count);
+        });
+
+        const totalAssetValue = computed(() => {
+          let val = 0;
+          ownedBooks.value.forEach(b => {
+             // 簡單估算: 新書以平均 380 計算, 二手以 180 計算
+             val += (b.type === '新' ? 380 : 180);
+          });
+          return val;
+        });
+
+        const activeSource = ref(null);
+
+        return { recentIntake, sourceGroups, totalAssetValue, activeSource, 
           currentTab, tabs, books, newBook, filterLocation, filterRead, searchQuery,
           showDashboard, allSourceOptions, locationFilters, readFilters,
           filteredArchiveBooks, wishlistBooks, currentlyReadingBooks, stats, analytics,
