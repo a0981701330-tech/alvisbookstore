@@ -35,6 +35,7 @@
     }
   </script>
   <style>
+    [v-cloak] { display: none !important; }
     body { background-color: #F8F6F1; font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif; color: #2D3136; -webkit-font-smoothing: antialiased; }
     .font-serif-title { font-family: 'Noto Serif TC', serif; }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -43,9 +44,9 @@
   </style>
 </head>
 <body class="min-h-screen py-6 md:py-10 px-3 sm:px-6 md:px-8 pb-28">
-  <div id="app" class="max-w-4xl mx-auto">
+  <div id="app" v-cloak class="max-w-4xl mx-auto">
     
-    <!-- 頂部導航列 -->
+    <!-- 頂部導航列與狀態 -->
     <header class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-nordic-border gap-4">
       <div class="cursor-pointer" @click="currentTab = 'home'">
         <div class="flex items-center gap-2 mb-1">
@@ -57,6 +58,7 @@
         <h1 class="text-2xl sm:text-3xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
       </div>
 
+      <!-- 分頁切換選單 -->
       <div class="flex flex-wrap items-center gap-2">
         <nav class="flex items-center bg-white/90 border border-nordic-border rounded-xl p-1 shadow-sm text-xs font-medium">
           <button v-for="tab in tabs" :key="tab.id"
@@ -73,7 +75,7 @@
       </div>
     </header>
 
-    <!-- 右下角懸浮儲存膠囊 -->
+    <!-- 右下角懸浮儲存膠囊按鈕 -->
     <aside class="fixed bottom-6 right-6 z-40">
       <button @click="saveToCloud" 
               :disabled="isSaving"
@@ -87,7 +89,7 @@
       </button>
     </aside>
 
-    <!-- ==================== 分頁 1：全新大氣首頁 (Landing Page) ==================== -->
+    <!-- ==================== 分頁 1：全新首頁 (Landing Page) ==================== -->
     <main v-if="currentTab === 'home'" class="animate-fadeIn space-y-8">
       <section class="w-full bg-white rounded-[2.5rem] p-8 sm:p-14 border border-nordic-border shadow-sm text-center relative overflow-hidden flex flex-col items-center">
         <div class="absolute -top-24 -right-24 w-64 h-64 bg-sand-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
@@ -130,7 +132,7 @@
           </div>
         </div>
 
-        <!-- 快速行動中樞 (Quick Actions) -->
+        <!-- 快速行動中樞 (Action Hub) -->
         <div class="relative z-10 w-full max-w-2xl mt-10 pt-8 border-t border-sand-100">
           <div class="text-[11px] font-bold text-nordic-muted uppercase tracking-widest mb-4">Quick Actions</div>
           <div class="flex flex-wrap justify-center items-center gap-3 text-xs font-semibold">
@@ -141,7 +143,7 @@
               <span>🗺️</span> 探索淘書地圖誌
             </button>
             <button @click="currentTab = 'library'" class="bg-blue-900 hover:bg-blue-950 text-white px-5 py-3 rounded-xl shadow-md transition flex items-center gap-2">
-              <span>🏛️</span> 圖書館借閱 ({{ activeLoans.length }})
+              <span>🏛️</span> 圖書館管理 ({{ activeLoans.length }})
             </button>
           </div>
         </div>
@@ -191,7 +193,7 @@
         </div>
       </div>
 
-      <!-- 四大新增功能：深度年度結算、開銷花費、買最多書地點、下年度目標 -->
+      <!-- 四大新增功能：年度結算、購書之王、花費開銷、下年度目標 -->
       <section v-if="showDashboard" class="bg-white rounded-3xl p-5 sm:p-7 border border-nordic-border shadow-sm space-y-6">
         
         <!-- 功能 1：年度閱讀結算 -->
@@ -412,6 +414,12 @@
         <div><h3 class="font-serif-title font-bold text-lg text-purple-950">🔖 待購書單 · Wishlist</h3><p class="text-xs text-purple-700 mt-0.5">心動名單，買下後點選地點即可一秒正式入庫。</p></div>
         <button @click="showAddWish = !showAddWish" class="bg-purple-700 text-white text-xs px-3.5 py-2 rounded-xl">＋ 隨手記書</button>
       </div>
+      <div v-if="showAddWish" class="bg-white p-4 rounded-2xl border space-y-2">
+        <form @submit.prevent="addWishItem" class="flex gap-2">
+          <input v-model.trim="newWish.title" placeholder="想買的書名 *" required class="flex-1 bg-purple-50/40 border rounded-xl px-3 py-2 text-xs" />
+          <button type="submit" class="bg-purple-700 text-white text-xs px-4 py-2 rounded-xl">加入</button>
+        </form>
+      </div>
       <div class="bg-white rounded-2xl border shadow-sm overflow-hidden divide-y divide-sand-100">
         <div v-if="wishlistBooks.length === 0" class="py-12 text-center text-nordic-muted text-xs">願望清單空空如也</div>
         <div v-for="b in wishlistBooks" :key="b.id" class="p-4 flex justify-between items-center">
@@ -474,7 +482,17 @@
       </section>
     </main>
 
-    <!-- 掃描 Modal -->
+    <!-- ==================== 分頁 7：書房手札 (Blog) ==================== -->
+    <main v-if="currentTab === 'blog'" class="space-y-6 animate-fadeIn">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border shadow-sm space-y-4">
+        <div class="flex justify-between items-center pb-3 border-b"><h3 class="font-serif-title font-bold text-xl">書房手札 · Notes</h3><button @click="showNewPost = !showNewPost" class="text-xs bg-sand-100 px-3 py-1.5 rounded-xl">{{ showNewPost ? '✕ 關閉' : '✍️ 寫新隨筆' }}</button></div>
+        <div v-if="showNewPost" class="bg-sand-50/80 p-4 rounded-2xl border space-y-3"><input v-model.trim="newPost.title" placeholder="標題..." class="w-full bg-white border rounded-xl px-3 py-2 text-xs" /><textarea v-model.trim="newPost.content" rows="4" placeholder="隨筆內容..." class="w-full bg-white border rounded-xl p-3 text-xs"></textarea><div class="flex justify-end"><button @click="addPost" class="bg-nordic-dark text-white text-xs px-5 py-2 rounded-xl">發布</button></div></div>
+        <div v-if="posts.length === 0" class="py-16 text-center text-nordic-muted text-xs">目前手札尚無筆記</div>
+        <div v-else class="divide-y divide-sand-100"><div v-for="post in posts" :key="post.id" class="py-5 space-y-2"><div class="flex justify-between text-[11px] text-nordic-muted"><span>{{ post.date }}</span><button @click="deletePost(post.id)" class="text-red-500">✕</button></div><h4 class="font-serif-title font-bold text-base text-nordic-dark">{{ post.title }}</h4><p class="text-xs text-nordic-slate whitespace-pre-line">{{ post.content }}</p></div></div>
+      </div>
+    </main>
+
+    <!-- 攝影機掃碼 Modal -->
     <div v-if="isScanning" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4 text-center">
         <div class="flex justify-between items-center"><h3 class="font-bold text-nordic-dark text-sm">📷 掃描 ISBN 條碼</h3><button @click="stopScanner" class="text-gray-400">✕</button></div>
@@ -506,19 +524,9 @@
 
     const BASE_SOURCES = ['台中墊腳石', '台南墊腳石', '台中茉莉二手書店', '台南珍寶書坊', '大遠百誠品', '台中中友百貨誠品', '虎尾誠品', '誠品線上', '博客來(線上)', '讀冊(線上)', '書寶(線上)', '蝦皮', '雲林建忠書店', '雲林田納西書店', '麗寶金石堂', '電子書', '舅舅贈送', '學弟贈送', 'Mick贈送'];
 
-    const INITIAL_BOOKS = [
-      {"id": 1, "title": "小王子", "author": "聖修伯里", "publisher": "漫遊者", "type": "二手", "location": "在家", "source": "蝦皮", "readingStatus": "閱讀完畢"},
-      {"id": 2, "title": "安妮的日記", "author": "安妮法蘭克", "publisher": "志文出版社", "type": "二手", "location": "在家", "source": "台南珍寶書坊", "readingStatus": "未讀"},
-      {"id": 6, "title": "變形記", "author": "卡夫卡", "publisher": "菓子文化", "type": "新", "location": "在租屋處", "source": "雲林田納西書店", "readingStatus": "未讀"},
-      {"id": 12, "title": "1984", "author": "喬治歐維爾", "publisher": "漫遊者", "type": "新", "location": "在家", "source": "雲林建忠書店", "readingStatus": "閱讀完畢"},
-      {"id": 17, "title": "解憂雜貨店", "author": "東野圭吾", "publisher": "皇冠", "type": "新", "location": "在家", "source": "雲林田納西書店", "readingStatus": "閱讀完畢"}
-    ];
+    const INITIAL_BOOKS = [{"id":1,"title":"小王子","author":"聖修伯里","publisher":"漫遊者","type":"二手","location":"在家","source":"蝦皮","readingStatus":"閱讀完畢"},{"id":6,"title":"變形記","author":"卡夫卡","publisher":"菓子文化","type":"新","location":"在租屋處","source":"雲林田納西書店","readingStatus":"未讀"},{"id":12,"title":"1984","author":"喬治歐維爾","publisher":"漫遊者","type":"新","location":"在家","source":"雲林建忠書店","readingStatus":"閱讀完畢"}];
 
-    const INITIAL_LIBRARY_RECORDS = [
-      {"id": 1791600000001, "title": "翁庭華攝影作品集 : 山城九份", "author": "翁庭華", "callNo": "957 8666", "borrowDate": "2026-10-28", "dueDate": "2026-11-18", "status": "借閱中", "val": 600},
-      {"id": 1791600000002, "title": "走拍臺灣", "author": "謝三泰", "callNo": "957.9 8243", "borrowDate": "2026-10-28", "dueDate": "2026-11-18", "status": "借閱中", "val": 550},
-      {"id": 1791600000003, "title": "銀鹽世代-尋找歲月靈光. 1890s-2015 : 臺灣攝影家原作展", "author": "蔡昭儀主編", "callNo": "957.6 8455", "borrowDate": "2026-10-28", "dueDate": "2026-11-18", "status": "借閱中", "val": 600}
-    ];
+    const INITIAL_LIBRARY_RECORDS = [{"id":1791600000001,"title":"翁庭華攝影作品集 : 山城九份","author":"翁庭華","callNo":"957 8666","borrowDate":"2026-10-28","dueDate":"2026-11-18","status":"借閱中","val":600},{"id":1791600000002,"title":"走拍臺灣","author":"謝三泰","callNo":"957.9 8243","borrowDate":"2026-10-28","dueDate":"2026-11-18","status":"借閱中","val":550},{"id":1791600000003,"title":"銀鹽世代-尋找歲月靈光. 1890s-2015 : 臺灣攝影家原作展","author":"蔡昭儀主編","callNo":"957.6 8455","borrowDate":"2026-10-28","dueDate":"2026-11-18","status":"借閱中","val":600}];
 
     const { createApp, ref, computed, onMounted } = Vue;
 
@@ -541,7 +549,7 @@
         const libSearchQuery = ref('');
         const newLib = ref({ title: '', author: '', callNo: '', borrowDate: '', dueDate: '', renewRange: '' });
 
-        // 年度結算與目標
+        // 1. 年度結算與預期目標
         const selectedYear = ref('2026');
         const nextYearGoal = ref({ year: '2027', targetBooks: 50, budget: 8000 });
         try {
@@ -588,6 +596,8 @@
         }
 
         const posts = ref([]);
+        const showNewPost = ref(false);
+        const newPost = ref({ title: '', content: '' });
         const customSources = ref([]);
 
         const allSourceOptions = computed(() => {
@@ -606,7 +616,7 @@
         const activeLoans = computed(() => libraryRecords.value.filter(r => r.status === '借閱中'));
         const returnedHistory = computed(() => libraryRecords.value.filter(r => r.status === '已歸還'));
 
-        // 通路統計與購書地點之王
+        // 2. 通路統計與購書地點之王
         const sourceGroups = computed(() => {
           const groups = {};
           ownedBooks.value.forEach(b => {
@@ -614,328 +624,4 @@
             if (!groups[s]) groups[s] = [];
             groups[s].push(b);
           });
-          return Object.entries(groups).map(([name, items]) => ({ name, count: items.length, items })).sort((a, b) => b.count - a.count);
-        });
-
-        const topSourceLocation = computed(() => {
-          return sourceGroups.value.length > 0 ? sourceGroups.value[0] : { name: '暫無', count: 0 };
-        });
-
-        const activeSource = ref(null);
-
-        // 自有藏書市值估算
-        const totalAssetValue = computed(() => {
-          let val = 0;
-          ownedBooks.value.forEach(b => { val += (b.type === '新' ? 380 : 180); });
-          return val;
-        });
-
-        // 年度結算報告統計
-        const yearStats = computed(() => {
-          const yr = selectedYear.value;
-          const libCount = libraryRecords.value.filter(r => r.returnDate && r.returnDate.startsWith(yr)).length;
-          const ownedFinished = ownedBooks.value.filter(b => b.readingStatus === '閱讀完畢').length;
-          const totalFin = libCount + (yr === '2026' ? ownedFinished : Math.round(ownedFinished * 0.4));
-          const topCat = libCategories.value.length > 0 ? libCategories.value[0].name : '文學與小說';
-          return {
-            totalFinished: totalFin,
-            libraryReturned: libCount,
-            topCategory: topCat
-          };
-        });
-
-        // 圖書館學費回本與分類統計
-        const libStats = computed(() => {
-          const totalVal = libraryRecords.value.reduce((sum, r) => sum + (r.val || 420), 0);
-          const semesterTuition = 20000;
-          return {
-            totalSavedValue: totalVal,
-            roiPercent: Math.round((totalVal / semesterTuition) * 100),
-            semesterEquivalent: (totalVal / semesterTuition).toFixed(1)
-          };
-        });
-
-        const libCategories = computed(() => {
-          const catMap = { '攝影藝術': { icon: '📷', count: 0 }, '電影與劇本': { icon: '🎬', count: 0 }, '哲學與思想': { icon: '🏛️', count: 0 }, '文學與小說': { icon: '📚', count: 0 }, '社會與教育': { icon: '🔍', count: 0 }, '動漫與其他': { icon: '🏀', count: 0 } };
-          libraryRecords.value.forEach(r => {
-            const t = r.title; const c = r.callNo || '';
-            if (t.includes('攝影') || t.includes('影像') || c.startsWith('95')) catMap['攝影藝術'].count++;
-            else if (t.includes('電影') || t.includes('劇本') || c.startsWith('987')) catMap['電影與劇本'].count++;
-            else if (t.includes('哲學') || c.startsWith('1')) catMap['哲學與思想'].count++;
-            else if (t.includes('社會') || t.includes('教育') || c.startsWith('5')) catMap['社會與教育'].count++;
-            else catMap['文學與小說'].count++;
-          });
-          return Object.entries(catMap).map(([name, data]) => ({ name, icon: data.icon, count: data.count })).sort((a, b) => b.count - a.count);
-        });
-
-        const tabs = computed(() => [
-          { id: 'home', label: '首頁', icon: '🏠' },
-          { id: 'archive', label: '藏書縱覽', icon: '📚' },
-          { id: 'library', label: '圖書館', icon: '🏛️', badge: activeLoans.value.length ? `${activeLoans.value.length}借閱中` : null },
-          { id: 'sources', label: '淘書地圖', icon: '🗺️' },
-          { id: 'wishlist', label: '願望清單', icon: '🔖', badge: wishlistBooks.value.length || null },
-          { id: 'add', label: '新書入藏', icon: '➕' },
-          { id: 'blog', label: '書房手札', icon: '✍️' }
-        ]);
-
-        const locationFilters = [{ label: '全部', val: 'all' }, { label: '老家', val: '在家' }, { label: '租屋處', val: '在租屋處' }, { label: '🏷️ 售出', val: '售出' }];
-        const readFilters = [{ label: '全部', val: 'all' }, { label: '完畢', val: '閱讀完畢' }, { label: '閱讀中', val: '閱讀中' }, { label: '待讀', val: '未讀' }];
-
-        const syncStatusText = computed(() => isSaving.value ? '儲存中...' : (hasUnsavedChanges.value ? '有未儲存變更' : '已同步雲端'));
-        const syncStatusClass = computed(() => isSaving.value ? 'bg-blue-400 animate-pulse' : (hasUnsavedChanges.value ? 'bg-amber-400 animate-bounce' : 'bg-nordic-sage'));
-
-        const fetchFromCloud = async () => {
-          try {
-            const res = await fetch(`${API_URL}/latest`, { headers: { 'X-Master-Key': MASTER_KEY } });
-            const data = await res.json();
-            const record = data.record;
-            if (record && record.books && record.books.length >= books.value.length) {
-              books.value = record.books;
-              if (Array.isArray(record.library) && record.library.length >= libraryRecords.value.length) {
-                libraryRecords.value = record.library;
-                localStorage.setItem(LIBRARY_KEY, JSON.stringify(record.library));
-              }
-              localStorage.setItem(LOCAL_KEY, JSON.stringify(record.books));
-              hasUnsavedChanges.value = false;
-            }
-          } catch (e) {}
-        };
-
-        const saveToCloud = async (isSilent = false) => {
-          isSaving.value = true;
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
-          localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value));
-          try {
-            const payload = { books: books.value, posts: posts.value, library: libraryRecords.value };
-            const res = await fetch(API_URL, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
-              body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-              isSaving.value = false;
-              hasUnsavedChanges.value = false;
-              if (!isSilent) alert('✓ 雲端同步成功！');
-            }
-          } catch (err) {
-            isSaving.value = false;
-            if (!isSilent) alert('⚠️ 儲存失敗，請檢查網路。');
-          }
-        };
-
-        // 一打開就是誠品的直通函式
-        const openEslite = (keyword) => {
-          if (!keyword) { alert('請先輸入書名或 ISBN'); return; }
-          const clean = keyword.replace(/[^0-9X]/gi, '').trim();
-          const query = (clean.length === 10 || clean.length === 13) ? clean : keyword.trim();
-          window.open(`https://www.eslite.com/Search?keyword=${encodeURIComponent(query)}`, '_blank');
-        };
-
-        const fetchBookByISBN = async (isbn) => {
-          const cleanIsbn = isbn.replace(/[^0-9X]/gi, '').trim();
-          if (!cleanIsbn) return;
-          
-          // 核心體驗：一查 ISBN 就同步直接打開誠品線上官網！
-          openEslite(cleanIsbn);
-
-          if (isbnCache.has(cleanIsbn)) {
-            const cached = isbnCache.get(cleanIsbn);
-            newBook.value.title = cached.title;
-            newBook.value.author = cached.author;
-            newBook.value.publisher = cached.publisher;
-            return;
-          }
-
-          const hasChinese = (str) => /[一-龥]/.test(str);
-          try {
-            newBook.value.title = '查詢中...';
-            const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&hl=zh-TW`;
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data.items && data.items.length > 0) {
-              const item = data.items.find(it => hasChinese(it.volumeInfo?.title || '')) || data.items[0];
-              const info = item.volumeInfo || {};
-              const title = info.title || '';
-              const author = info.authors ? info.authors.join('、') : '';
-              const publisher = info.publisher || '';
-              newBook.value.title = title;
-              newBook.value.author = author;
-              newBook.value.publisher = publisher;
-              isbnCache.set(cleanIsbn, { title, author, publisher });
-            } else {
-              newBook.value.title = '';
-            }
-          } catch (e) {
-            newBook.value.title = '';
-          }
-        };
-
-        const lookupManualIsbn = () => { if (manualIsbn.value) fetchBookByISBN(manualIsbn.value); };
-
-        const startScanner = async () => {
-          isScanning.value = true;
-          await Vue.nextTick();
-          setTimeout(async () => {
-            try {
-              html5QrCode = new Html5Qrcode("reader");
-              await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-                stopScanner();
-                fetchBookByISBN(text.trim());
-              }, () => {});
-            } catch (e) { alert('相機啟動失敗'); isScanning.value = false; }
-          }, 250);
-        };
-
-        const stopScanner = () => {
-          if (html5QrCode) { html5QrCode.stop().then(() => { html5QrCode.clear(); isScanning.value = false; }).catch(() => { isScanning.value = false; }); }
-          else { isScanning.value = false; }
-        };
-
-        const recentIntake = ref([]);
-        const addBook = () => {
-          if (!newBook.value.title) return;
-          const added = {
-            id: Date.now(),
-            title: newBook.value.title,
-            author: newBook.value.author,
-            publisher: newBook.value.publisher,
-            source: newBook.value.source,
-            location: newBook.value.location,
-            type: newBook.value.type,
-            readingStatus: newBook.value.readingStatus || '未讀'
-          };
-          books.value.unshift(added);
-          recentIntake.value.unshift(added);
-          if (recentIntake.value.length > 5) recentIntake.value.pop();
-          hasUnsavedChanges.value = true;
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
-          alert(`✓ 成功收錄《${added.title}》！`);
-          newBook.value = { title: '', author: '', publisher: '', source: added.source, location: added.location, type: '新', readingStatus: '未讀' };
-          manualIsbn.value = '';
-        };
-
-        const deleteBook = (id) => {
-          if (confirm('確定刪除此書？')) {
-            books.value = books.value.filter(b => b.id !== id);
-            hasUnsavedChanges.value = true;
-            localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
-          }
-        };
-
-        const updateBookField = (id, field, val) => {
-          const t = books.value.find(b => b.id === id);
-          if (t) { t[field] = val; hasUnsavedChanges.value = true; localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value)); }
-        };
-
-        const markAsFinished = (id) => { updateBookField(id, 'readingStatus', '閱讀完畢'); alert('已標記為閱讀完畢！'); };
-        
-        const addLibraryRecord = () => {
-          if (!newLib.value.title) return;
-          libraryRecords.value.unshift({ id: Date.now(), title: newLib.value.title, author: newLib.value.author || '', callNo: newLib.value.callNo || '', borrowDate: newLib.value.borrowDate || '2026-10-28', dueDate: newLib.value.dueDate || '2026-11-18', status: '借閱中', val: 450 });
-          hasUnsavedChanges.value = true;
-          localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value));
-          newLib.value = { title: '', author: '', callNo: '', borrowDate: '', dueDate: '', renewRange: '' };
-          showAddLib.value = false;
-          alert('✓ 借閱登記成功！');
-        };
-
-        const markAsReturned = (id) => {
-          const r = libraryRecords.value.find(x => x.id === id);
-          if (r) { r.status = '已歸還'; r.returnDate = '2026-11-09'; hasUnsavedChanges.value = true; localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value)); alert('已歸還！'); }
-        };
-
-        const copyLibToWishlist = (rec) => {
-          books.value.unshift({ id: Date.now(), title: rec.title, author: rec.author || '', source: '圖書館讀過想收藏', location: '願望待購', type: '新', readingStatus: '未讀' });
-          hasUnsavedChanges.value = true;
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
-          alert('已加入願望清單！');
-        };
-
-        const addWishItem = () => {
-          if (!newWish.value.title) return;
-          books.value.unshift({ id: Date.now(), title: newWish.value.title, author: newWish.value.author || '', source: newWish.value.note || '', location: '願望待購', type: '新', readingStatus: '未讀' });
-          hasUnsavedChanges.value = true;
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
-          newWish.value = { title: '', author: '', note: '' };
-          showAddWish.value = false;
-        };
-
-        const moveToOwned = (b, loc) => { updateBookField(b.id, 'location', loc); alert('已入庫！'); };
-
-        const exportData = () => {
-          const blob = new Blob([JSON.stringify({ books: books.value, library: libraryRecords.value, goal: nextYearGoal.value }, null, 2)], { type: 'application/json' });
-          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bookshelf-backup.json'; a.click();
-        };
-
-        const importData = (e) => {
-          const f = e.target.files[0]; if (!f) return;
-          const r = new FileReader();
-          r.onload = (evt) => {
-            try {
-              const d = JSON.parse(evt.target.result);
-              if (d.books) books.value = d.books;
-              if (d.library) libraryRecords.value = d.library;
-              if (d.goal) nextYearGoal.value = d.goal;
-              hasUnsavedChanges.value = true;
-              alert('匯入成功！請點擊右下角儲存。');
-            } catch (err) { alert('格式錯誤'); }
-          };
-          r.readAsText(f);
-        };
-
-        const formatIndex = (n) => n < 10 ? `0${n}` : `${n}`;
-        const getLocationBadgeStyle = (loc) => loc === '在租屋處' ? 'bg-[#ECE7DE] text-[#6B5A46]' : (loc === '在家' ? 'bg-[#EBF1EA] text-[#486345]' : 'bg-gray-100 text-gray-500 font-semibold');
-        const getReadingStatusStyle = (st) => st === '閱讀完畢' ? 'bg-[#E5ECE3] text-[#3D5638] font-semibold' : (st === '閱讀中' ? 'bg-[#F2EADB] text-[#8C6228] font-semibold' : 'bg-sand-100 text-nordic-muted');
-
-        const filteredArchiveBooks = computed(() => {
-          return allArchiveBooks.value.filter(b => {
-            const ml = filterLocation.value === 'all' || b.location === filterLocation.value;
-            const mr = filterRead.value === 'all' || b.readingStatus === filterRead.value;
-            const q = searchQuery.value.toLowerCase().trim();
-            const mq = !q || b.title.toLowerCase().includes(q) || (b.author && b.author.toLowerCase().includes(q));
-            return ml && mr && mq;
-          });
-        });
-
-        const stats = computed(() => ({
-          totalOwned: ownedBooks.value.length,
-          finished: ownedBooks.value.filter(b => b.readingStatus === '閱讀完畢').length,
-          reading: ownedBooks.value.filter(b => b.readingStatus === '閱讀中').length,
-          unread: ownedBooks.value.filter(b => b.readingStatus === '未讀').length,
-          home: books.value.filter(b => b.location === '在家').length,
-          rental: books.value.filter(b => b.location === '在租屋處').length,
-          wishlist: wishlistBooks.value.length,
-          sold: books.value.filter(b => b.location === '售出').length,
-          usedCount: ownedBooks.value.filter(b => b.type === '二手').length
-        }));
-
-        const analytics = computed(() => {
-          const tot = stats.value.totalOwned || 1;
-          return {
-            readRate: Math.round((stats.value.finished / tot) * 100),
-            readingRate: Math.round((stats.value.reading / tot) * 100)
-          };
-        });
-
-        onMounted(() => { fetchFromCloud(); });
-
-        return {
-          currentTab, tabs, books, newBook, filterLocation, filterRead, searchQuery,
-          showDashboard, allSourceOptions, locationFilters, readFilters,
-          filteredArchiveBooks, wishlistBooks, currentlyReadingBooks, stats, analytics,
-          libraryRecords, activeLoans, returnedHistory, libStats, libCategories,
-          sourceGroups, topSourceLocation, activeSource, totalAssetValue, recentIntake,
-          selectedYear, yearStats, nextYearGoal, saveGoal,
-          showAddLib, filterLibYear, libSearchQuery, newLib, addLibraryRecord, markAsReturned, deleteLibRecord, copyLibToWishlist,
-          showAddWish, newWish, addWishItem, posts,
-          syncState, syncStatusText, syncStatusClass, isSaving, hasUnsavedChanges, saveToCloud,
-          isScanning, manualIsbn, lookupManualIsbn, startScanner, stopScanner, openEslite,
-          formatIndex, addBook, deleteBook, updateBookField, markAsFinished, moveToOwned,
-          getLocationBadgeStyle, getReadingStatusStyle,
-          fetchFromCloud, exportData, importData
-        };
-      }
-    }).mount('#app');
-  </script>
-</body>
-</html>
+          return
