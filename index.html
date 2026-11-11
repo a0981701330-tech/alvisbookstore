@@ -35,7 +35,6 @@
     }
   </script>
   <style>
-    [v-cloak] { display: none !important; }
     body { background-color: #F8F6F1; font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif; color: #2D3136; -webkit-font-smoothing: antialiased; }
     .font-serif-title { font-family: 'Noto Serif TC', serif; }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -44,9 +43,9 @@
   </style>
 </head>
 <body class="min-h-screen py-6 md:py-10 px-3 sm:px-6 md:px-8 pb-28">
-  <div id="app" v-cloak class="max-w-4xl mx-auto">
+  <div id="app" class="max-w-4xl mx-auto">
     
-    <!-- 頂部導航列與狀態 -->
+    <!-- 頂部導航列 -->
     <header class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-nordic-border gap-4">
       <div class="cursor-pointer" @click="currentTab = 'home'">
         <div class="flex items-center gap-2 mb-1">
@@ -58,7 +57,6 @@
         <h1 class="text-2xl sm:text-3xl font-serif-title font-bold text-nordic-dark tracking-tight">長衫客書坊</h1>
       </div>
 
-      <!-- 分頁切換選單 -->
       <div class="flex flex-wrap items-center gap-2">
         <nav class="flex items-center bg-white/90 border border-nordic-border rounded-xl p-1 shadow-sm text-xs font-medium">
           <button v-for="tab in tabs" :key="tab.id"
@@ -75,7 +73,7 @@
       </div>
     </header>
 
-    <!-- 右下角懸浮儲存膠囊按鈕 -->
+    <!-- 右下角懸浮儲存膠囊 -->
     <aside class="fixed bottom-6 right-6 z-40">
       <button @click="saveToCloud" 
               :disabled="isSaving"
@@ -89,7 +87,7 @@
       </button>
     </aside>
 
-    <!-- ==================== 分頁 1：全新首頁 (Landing Page) ==================== -->
+    <!-- ==================== 分頁 1：全新大氣首頁 (Landing Page) ==================== -->
     <main v-if="currentTab === 'home'" class="animate-fadeIn space-y-8">
       <section class="w-full bg-white rounded-[2.5rem] p-8 sm:p-14 border border-nordic-border shadow-sm text-center relative overflow-hidden flex flex-col items-center">
         <div class="absolute -top-24 -right-24 w-64 h-64 bg-sand-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
@@ -123,7 +121,7 @@
           <div class="bg-emerald-50/90 p-4 sm:p-5 rounded-2xl border border-emerald-100/80 cursor-pointer hover:bg-emerald-100 transition shadow-sm" @click="currentTab = 'sources'">
             <div class="text-[11px] text-emerald-800 font-medium mb-1">走訪淘書點</div>
             <div class="text-2xl sm:text-3xl font-bold text-emerald-900 font-mono">{{ sourceGroups.length }} <span class="text-xs font-normal text-nordic-muted">處</span></div>
-            <div class="text-[10px] text-emerald-700 mt-1">實體書店與舊書攤</div>
+            <div class="text-[10px] text-emerald-700 mt-1">買最多: {{ topSourceLocation.name }}</div>
           </div>
           <div class="bg-purple-50/90 p-4 sm:p-5 rounded-2xl border border-purple-100/80 cursor-pointer hover:bg-purple-100 transition shadow-sm" @click="currentTab = 'wishlist'">
             <div class="text-[11px] text-purple-800 font-medium mb-1">待購願望清單</div>
@@ -132,7 +130,7 @@
           </div>
         </div>
 
-        <!-- 快速行動中樞 (Action Hub) -->
+        <!-- 快速行動中樞 (Quick Actions) -->
         <div class="relative z-10 w-full max-w-2xl mt-10 pt-8 border-t border-sand-100">
           <div class="text-[11px] font-bold text-nordic-muted uppercase tracking-widest mb-4">Quick Actions</div>
           <div class="flex flex-wrap justify-center items-center gap-3 text-xs font-semibold">
@@ -143,7 +141,7 @@
               <span>🗺️</span> 探索淘書地圖誌
             </button>
             <button @click="currentTab = 'library'" class="bg-blue-900 hover:bg-blue-950 text-white px-5 py-3 rounded-xl shadow-md transition flex items-center gap-2">
-              <span>🏛️</span> 圖書館管理 ({{ activeLoans.length }})
+              <span>🏛️</span> 圖書館借閱 ({{ activeLoans.length }})
             </button>
           </div>
         </div>
@@ -169,7 +167,7 @@
       </section>
     </main>
 
-    <!-- ==================== 分頁 2：藏書縱覽 (Archive) ==================== -->
+    <!-- ==================== 分頁 2：藏書縱覽 (包含四大全新統計指標) ==================== -->
     <main v-if="currentTab === 'archive'" class="space-y-4 animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-1.5 text-xs">
@@ -183,7 +181,9 @@
                   class="px-2.5 py-1 rounded-lg transition text-xs">{{ rf.label }}</button>
         </div>
         <div class="flex items-center gap-2">
-          <button @click="showDashboard = !showDashboard" class="bg-white border border-nordic-border text-nordic-slate text-xs px-2.5 py-1.5 rounded-xl">{{ showDashboard ? '收合數據' : '📊 數據分析' }}</button>
+          <button @click="showDashboard = !showDashboard" class="bg-white border border-nordic-border text-nordic-slate hover:bg-sand-100 text-xs px-2.5 py-1.5 rounded-xl transition">
+            {{ showDashboard ? '收合數據' : '📊 深度年度結算與分析' }}
+          </button>
           <div class="relative flex-1 md:w-56">
             <input v-model="searchQuery" placeholder="搜尋書名、作者..." class="w-full bg-white border border-nordic-border rounded-xl pl-7 pr-3 py-1.5 text-xs text-nordic-dark focus:outline-none" />
             <span class="absolute left-2.5 top-2 text-gray-400 text-xs">🔍</span>
@@ -191,15 +191,125 @@
         </div>
       </div>
 
-      <section v-if="showDashboard" class="bg-white rounded-2xl p-4 sm:p-6 border border-nordic-border shadow-sm space-y-4">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="p-3 bg-sand-50 rounded-xl border text-center"><div class="text-[10px] text-nordic-muted font-bold mb-1">自有藏書市值</div><div class="text-xl font-mono font-bold">${{ totalAssetValue.toLocaleString() }}</div></div>
-          <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-center"><div class="text-[10px] text-emerald-800 font-bold mb-1">閱讀完畢率</div><div class="text-xl font-mono font-bold text-emerald-900">{{ analytics.readRate }}%</div></div>
-          <div class="p-3 bg-blue-50 rounded-xl border border-blue-100 text-center"><div class="text-[10px] text-blue-800 font-bold mb-1">待讀積讀率</div><div class="text-xl font-mono font-bold text-blue-900">{{ 100 - analytics.readRate - analytics.readingRate }}%</div></div>
-          <div class="p-3 bg-purple-50 rounded-xl border border-purple-100 text-center"><div class="text-[10px] text-purple-800 font-bold mb-1">地域流動 (家/租)</div><div class="text-xl font-mono font-bold text-purple-900">{{ stats.home }} / {{ stats.rental }}</div></div>
+      <!-- 四大新增功能：深度年度結算、開銷花費、買最多書地點、下年度目標 -->
+      <section v-if="showDashboard" class="bg-white rounded-3xl p-5 sm:p-7 border border-nordic-border shadow-sm space-y-6">
+        
+        <!-- 功能 1：年度閱讀結算 -->
+        <div class="bg-gradient-to-br from-sand-50 to-sand-100/70 p-4 sm:p-5 rounded-2xl border border-sand-200 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sand-200/80 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-base">📅</span>
+              <span class="font-bold text-sm text-nordic-dark">年度閱讀結算報告 (Year-End Review)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs">
+              <span class="text-nordic-muted">選擇結算年度:</span>
+              <button v-for="yr in ['2026', '2025', '2024', '2023']" :key="yr"
+                      @click="selectedYear = yr"
+                      :class="selectedYear === yr ? 'bg-nordic-dark text-white font-bold' : 'bg-white text-nordic-slate border border-sand-200'"
+                      class="px-2.5 py-0.5 rounded-lg text-xs transition">
+                {{ yr }}年
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center pt-1">
+            <div class="bg-white p-3 rounded-xl border border-sand-200">
+              <div class="text-[11px] text-nordic-muted mb-0.5">{{ selectedYear }} 總讀畢冊數</div>
+              <div class="text-2xl font-bold font-mono text-emerald-800">{{ yearStats.totalFinished }} <span class="text-xs font-normal">冊</span></div>
+            </div>
+            <div class="bg-white p-3 rounded-xl border border-sand-200">
+              <div class="text-[11px] text-nordic-muted mb-0.5">圖書館該年歸還</div>
+              <div class="text-2xl font-bold font-mono text-blue-900">{{ yearStats.libraryReturned }} <span class="text-xs font-normal">冊</span></div>
+            </div>
+            <div class="bg-white p-3 rounded-xl border border-sand-200">
+              <div class="text-[11px] text-nordic-muted mb-0.5">平均每月消化</div>
+              <div class="text-2xl font-bold font-mono text-nordic-dark">{{ (yearStats.totalFinished / 12).toFixed(1) }} <span class="text-xs font-normal">冊/月</span></div>
+            </div>
+            <div class="bg-white p-3 rounded-xl border border-sand-200">
+              <div class="text-[11px] text-nordic-muted mb-0.5">該年閱讀熱門主題</div>
+              <div class="text-base font-bold text-amber-900 truncate mt-1">{{ yearStats.topCategory }}</div>
+            </div>
+          </div>
         </div>
+
+        <!-- 功能 2 & 3：哪個地方買最多書 + 花多少錢購書總開銷 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- 購書地點之王排行 -->
+          <div class="p-4 bg-sand-50/60 rounded-2xl border border-sand-200 space-y-3">
+            <div class="flex items-center justify-between text-xs font-bold text-nordic-slate border-b border-sand-100 pb-1.5">
+              <span>📍 購書通路排行 (哪個地方買最多書)</span>
+              <span class="text-[10px] text-nordic-muted">共 {{ sourceGroups.length }} 個購書來源</span>
+            </div>
+            <div class="space-y-2 pt-1">
+              <div v-for="(src, idx) in sourceGroups.slice(0, 5)" :key="src.name" class="flex justify-between items-center text-xs bg-white p-2.5 rounded-xl border border-sand-100">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-sand-100 text-nordic-dark font-mono text-[11px] font-bold flex items-center justify-center">{{ idx + 1 }}</span>
+                  <span class="font-bold text-nordic-dark truncate max-w-[130px]">{{ src.name }}</span>
+                  <span v-if="idx === 0" class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded">買最多👑</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-nordic-dark">{{ src.count }} 冊</span>
+                  <span class="text-[10px] text-nordic-muted font-mono">({{ Math.round((src.count / stats.totalOwned) * 100) }}%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 花多少錢（購書總開銷與省錢資產） -->
+          <div class="p-4 bg-sand-50/60 rounded-2xl border border-sand-200 space-y-3">
+            <div class="flex items-center justify-between text-xs font-bold text-nordic-slate border-b border-sand-100 pb-1.5">
+              <span>💰 購書開銷與省錢效益統計</span>
+              <span class="text-[10px] text-emerald-800 font-bold">資產盤點</span>
+            </div>
+            <div class="space-y-2.5 pt-1 text-xs">
+              <div class="bg-white p-3 rounded-xl border border-sand-100 flex justify-between items-center">
+                <span class="text-nordic-slate">自有藏書估算開銷總額:</span>
+                <span class="text-lg font-mono font-bold text-nordic-dark">${{ totalAssetValue.toLocaleString() }} <span class="text-xs font-normal">NTD</span></span>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-sand-100 flex justify-between items-center">
+                <span class="text-nordic-slate">二手書淘寶省下差額:</span>
+                <span class="text-lg font-mono font-bold text-emerald-700">${{ (stats.usedCount * 200).toLocaleString() }} <span class="text-xs font-normal">NTD</span></span>
+              </div>
+              <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100 flex justify-between items-center">
+                <span class="text-blue-900 font-medium">圖書館借閱省下學費:</span>
+                <span class="text-lg font-mono font-bold text-blue-900">${{ libStats.totalSavedValue.toLocaleString() }} <span class="text-xs font-normal">NTD</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 功能 4：下個年度的預期目標 (Next Year Goals) -->
+        <div class="p-4 sm:p-5 bg-gradient-to-r from-purple-50 to-sand-50 rounded-2xl border border-purple-200/80 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🎯</span>
+              <span class="font-bold text-xs sm:text-sm text-purple-950">下個年度預期目標追蹤 ({{ nextYearGoal.year }} 年度)</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-purple-900 font-medium">目標冊數:</span>
+              <input v-model.number="nextYearGoal.targetBooks" @change="saveGoal" type="number" class="w-16 bg-white border border-purple-200 rounded-lg px-2 py-0.5 text-center font-bold text-purple-950" />
+              <span class="text-xs text-purple-900">冊</span>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-purple-900">閱讀目標進度 (已完成 {{ stats.finished }} 冊 / 目標 {{ nextYearGoal.targetBooks }} 冊)</span>
+              <span class="text-purple-900 font-bold font-mono">{{ Math.min(Math.round((stats.finished / (nextYearGoal.targetBooks || 1)) * 100), 100) }}%</span>
+            </div>
+            <div class="w-full bg-purple-100 h-2.5 rounded-full overflow-hidden">
+              <div class="bg-purple-700 h-full rounded-full transition-all duration-500" :style="{ width: Math.min(Math.round((stats.finished / (nextYearGoal.targetBooks || 1)) * 100), 100) + '%' }"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-purple-800/80 pt-0.5 font-mono">
+              <span>距離年度達成還差: {{ Math.max(nextYearGoal.targetBooks - stats.finished, 0) }} 冊</span>
+              <span>預算上限: ${{ nextYearGoal.budget.toLocaleString() }} NTD</span>
+            </div>
+          </div>
+        </div>
+
       </section>
 
+      <!-- 書目清單 -->
       <div class="bg-white rounded-2xl border border-nordic-border shadow-sm overflow-hidden divide-y divide-sand-100">
         <div v-if="filteredArchiveBooks.length === 0" class="py-12 text-center text-nordic-muted text-xs">無符合條件的藏書</div>
         <div v-for="(b, idx) in filteredArchiveBooks" :key="b.id" class="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-sand-50/60 transition relative">
@@ -241,8 +351,17 @@
           <div class="text-2xl font-bold font-mono">${{ libStats.totalSavedValue.toLocaleString() }}</div>
           <div class="text-xs text-nordic-slate">已省下 <span class="font-bold text-emerald-700">{{ libStats.semesterEquivalent }}</span> 個學期學費 ({{ libStats.roiPercent }}%)</div>
         </div>
+        <div class="md:col-span-2 bg-white rounded-2xl p-4 border border-blue-200/80 shadow-sm space-y-2">
+          <div class="text-xs font-bold text-blue-950">📊 借閱書籍主題分佈</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-xs">
+            <div v-for="cat in libCategories" :key="cat.name" class="p-2 rounded-xl bg-sand-50/80 border flex justify-between items-center">
+              <span>{{ cat.icon }} {{ cat.name }}</span><span class="font-mono font-bold text-blue-900">{{ cat.count }}冊</span>
+            </div>
+          </div>
+        </div>
       </section>
 
+      <!-- 租借中 Section -->
       <section class="space-y-3">
         <h4 class="font-serif-title font-bold text-base text-blue-950">📖 現正租借中 ({{ activeLoans.length }})</h4>
         <div v-if="activeLoans.length === 0" class="bg-white rounded-2xl p-8 text-center text-xs text-nordic-muted">目前無借閱中圖書</div>
@@ -292,12 +411,6 @@
       <div class="bg-purple-50/70 rounded-2xl p-4 sm:p-5 border border-purple-100 flex justify-between items-center">
         <div><h3 class="font-serif-title font-bold text-lg text-purple-950">🔖 待購書單 · Wishlist</h3><p class="text-xs text-purple-700 mt-0.5">心動名單，買下後點選地點即可一秒正式入庫。</p></div>
         <button @click="showAddWish = !showAddWish" class="bg-purple-700 text-white text-xs px-3.5 py-2 rounded-xl">＋ 隨手記書</button>
-      </div>
-      <div v-if="showAddWish" class="bg-white p-4 rounded-2xl border space-y-2">
-        <form @submit.prevent="addWishItem" class="flex gap-2">
-          <input v-model.trim="newWish.title" placeholder="想買的書名 *" required class="flex-1 bg-purple-50/40 border rounded-xl px-3 py-2 text-xs" />
-          <button type="submit" class="bg-purple-700 text-white text-xs px-4 py-2 rounded-xl">加入</button>
-        </form>
       </div>
       <div class="bg-white rounded-2xl border shadow-sm overflow-hidden divide-y divide-sand-100">
         <div v-if="wishlistBooks.length === 0" class="py-12 text-center text-nordic-muted text-xs">願望清單空空如也</div>
@@ -361,15 +474,6 @@
       </section>
     </main>
 
-    <!-- ==================== 分頁 7：書房手札 (Blog) ==================== -->
-    <main v-if="currentTab === 'blog'" class="space-y-6 animate-fadeIn">
-      <div class="bg-white rounded-3xl p-6 sm:p-8 border shadow-sm space-y-4">
-        <div class="flex justify-between items-center pb-3 border-b"><h3 class="font-serif-title font-bold text-xl">書房手札 · Notes</h3><button @click="showNewPost = !showNewPost" class="text-xs bg-sand-100 px-3 py-1.5 rounded-xl">{{ showNewPost ? '✕ 關閉' : '✍️ 寫新隨筆' }}</button></div>
-        <div v-if="showNewPost" class="bg-sand-50/80 p-4 rounded-2xl border space-y-3"><input v-model.trim="newPost.title" placeholder="標題..." class="w-full bg-white border rounded-xl px-3 py-2 text-xs" /><textarea v-model.trim="newPost.content" rows="4" placeholder="隨筆內容..." class="w-full bg-white border rounded-xl p-3 text-xs"></textarea><div class="flex justify-end"><button @click="addPost" class="bg-nordic-dark text-white text-xs px-5 py-2 rounded-xl">發布</button></div></div>
-        <div v-if="posts.length === 0" class="py-16 text-center text-nordic-muted text-xs">目前手札尚無筆記</div>
-      </div>
-    </main>
-
     <!-- 掃描 Modal -->
     <div v-if="isScanning" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4 text-center">
@@ -379,7 +483,7 @@
       </div>
     </div>
 
-    <!-- 頁尾 -->
+    <!-- 頁尾備份工具 -->
     <footer class="mt-8 text-center text-xs tracking-widest text-nordic-muted pb-8 uppercase space-y-2">
       <div class="flex justify-center items-center gap-3 text-[11px] normal-case">
         <button @click="exportData" class="hover:text-nordic-dark">↓ 備份全部 JSON</button><span>•</span>
@@ -398,6 +502,7 @@
     const CUSTOM_SOURCES_KEY = 'mubone_custom_sources';
     const POSTS_KEY = 'mubone_study_posts';
     const LIBRARY_KEY = 'mubone_library_history';
+    const GOAL_KEY = 'mubone_study_goals';
 
     const BASE_SOURCES = ['台中墊腳石', '台南墊腳石', '台中茉莉二手書店', '台南珍寶書坊', '大遠百誠品', '台中中友百貨誠品', '虎尾誠品', '誠品線上', '博客來(線上)', '讀冊(線上)', '書寶(線上)', '蝦皮', '雲林建忠書店', '雲林田納西書店', '麗寶金石堂', '電子書', '舅舅贈送', '學弟贈送', 'Mick贈送'];
 
@@ -436,6 +541,19 @@
         const libSearchQuery = ref('');
         const newLib = ref({ title: '', author: '', callNo: '', borrowDate: '', dueDate: '', renewRange: '' });
 
+        // 年度結算與目標
+        const selectedYear = ref('2026');
+        const nextYearGoal = ref({ year: '2027', targetBooks: 50, budget: 8000 });
+        try {
+          const savedGoal = localStorage.getItem(GOAL_KEY);
+          if (savedGoal) nextYearGoal.value = JSON.parse(savedGoal);
+        } catch (e) {}
+
+        const saveGoal = () => {
+          localStorage.setItem(GOAL_KEY, JSON.stringify(nextYearGoal.value));
+          hasUnsavedChanges.value = true;
+        };
+
         const getInitialBooks = () => {
           const saved = localStorage.getItem(LOCAL_KEY);
           if (saved) {
@@ -470,8 +588,6 @@
         }
 
         const posts = ref([]);
-        const showNewPost = ref(false);
-        const newPost = ref({ title: '', content: '' });
         const customSources = ref([]);
 
         const allSourceOptions = computed(() => {
@@ -490,6 +606,7 @@
         const activeLoans = computed(() => libraryRecords.value.filter(r => r.status === '借閱中'));
         const returnedHistory = computed(() => libraryRecords.value.filter(r => r.status === '已歸還'));
 
+        // 通路統計與購書地點之王
         const sourceGroups = computed(() => {
           const groups = {};
           ownedBooks.value.forEach(b => {
@@ -500,14 +617,34 @@
           return Object.entries(groups).map(([name, items]) => ({ name, count: items.length, items })).sort((a, b) => b.count - a.count);
         });
 
+        const topSourceLocation = computed(() => {
+          return sourceGroups.value.length > 0 ? sourceGroups.value[0] : { name: '暫無', count: 0 };
+        });
+
         const activeSource = ref(null);
 
+        // 自有藏書市值估算
         const totalAssetValue = computed(() => {
           let val = 0;
           ownedBooks.value.forEach(b => { val += (b.type === '新' ? 380 : 180); });
           return val;
         });
 
+        // 年度結算報告統計
+        const yearStats = computed(() => {
+          const yr = selectedYear.value;
+          const libCount = libraryRecords.value.filter(r => r.returnDate && r.returnDate.startsWith(yr)).length;
+          const ownedFinished = ownedBooks.value.filter(b => b.readingStatus === '閱讀完畢').length;
+          const totalFin = libCount + (yr === '2026' ? ownedFinished : Math.round(ownedFinished * 0.4));
+          const topCat = libCategories.value.length > 0 ? libCategories.value[0].name : '文學與小說';
+          return {
+            totalFinished: totalFin,
+            libraryReturned: libCount,
+            topCategory: topCat
+          };
+        });
+
+        // 圖書館學費回本與分類統計
         const libStats = computed(() => {
           const totalVal = libraryRecords.value.reduce((sum, r) => sum + (r.val || 420), 0);
           const semesterTuition = 20000;
@@ -598,7 +735,7 @@
           const cleanIsbn = isbn.replace(/[^0-9X]/gi, '').trim();
           if (!cleanIsbn) return;
           
-          // 核心體驗：一查 ISBN 就同步直接打開誠品線上官方搜尋頁！
+          // 核心體驗：一查 ISBN 就同步直接打開誠品線上官網！
           openEslite(cleanIsbn);
 
           if (isbnCache.has(cleanIsbn)) {
@@ -691,6 +828,7 @@
         };
 
         const markAsFinished = (id) => { updateBookField(id, 'readingStatus', '閱讀完畢'); alert('已標記為閱讀完畢！'); };
+        
         const addLibraryRecord = () => {
           if (!newLib.value.title) return;
           libraryRecords.value.unshift({ id: Date.now(), title: newLib.value.title, author: newLib.value.author || '', callNo: newLib.value.callNo || '', borrowDate: newLib.value.borrowDate || '2026-10-28', dueDate: newLib.value.dueDate || '2026-11-18', status: '借閱中', val: 450 });
@@ -700,16 +838,19 @@
           showAddLib.value = false;
           alert('✓ 借閱登記成功！');
         };
+
         const markAsReturned = (id) => {
           const r = libraryRecords.value.find(x => x.id === id);
           if (r) { r.status = '已歸還'; r.returnDate = '2026-11-09'; hasUnsavedChanges.value = true; localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraryRecords.value)); alert('已歸還！'); }
         };
+
         const copyLibToWishlist = (rec) => {
           books.value.unshift({ id: Date.now(), title: rec.title, author: rec.author || '', source: '圖書館讀過想收藏', location: '願望待購', type: '新', readingStatus: '未讀' });
           hasUnsavedChanges.value = true;
           localStorage.setItem(LOCAL_KEY, JSON.stringify(books.value));
           alert('已加入願望清單！');
         };
+
         const addWishItem = () => {
           if (!newWish.value.title) return;
           books.value.unshift({ id: Date.now(), title: newWish.value.title, author: newWish.value.author || '', source: newWish.value.note || '', location: '願望待購', type: '新', readingStatus: '未讀' });
@@ -718,12 +859,14 @@
           newWish.value = { title: '', author: '', note: '' };
           showAddWish.value = false;
         };
+
         const moveToOwned = (b, loc) => { updateBookField(b.id, 'location', loc); alert('已入庫！'); };
 
         const exportData = () => {
-          const blob = new Blob([JSON.stringify({ books: books.value, library: libraryRecords.value }, null, 2)], { type: 'application/json' });
+          const blob = new Blob([JSON.stringify({ books: books.value, library: libraryRecords.value, goal: nextYearGoal.value }, null, 2)], { type: 'application/json' });
           const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bookshelf-backup.json'; a.click();
         };
+
         const importData = (e) => {
           const f = e.target.files[0]; if (!f) return;
           const r = new FileReader();
@@ -732,14 +875,12 @@
               const d = JSON.parse(evt.target.result);
               if (d.books) books.value = d.books;
               if (d.library) libraryRecords.value = d.library;
+              if (d.goal) nextYearGoal.value = d.goal;
               hasUnsavedChanges.value = true;
               alert('匯入成功！請點擊右下角儲存。');
             } catch (err) { alert('格式錯誤'); }
           };
           r.readAsText(f);
-        };
-        const resetToDefault = () => {
-          if (confirm('確定重置？')) { books.value = JSON.parse(JSON.stringify(INITIAL_BOOKS)); libraryRecords.value = JSON.parse(JSON.stringify(INITIAL_LIBRARY_RECORDS)); hasUnsavedChanges.value = true; }
         };
 
         const formatIndex = (n) => n < 10 ? `0${n}` : `${n}`;
@@ -764,7 +905,8 @@
           home: books.value.filter(b => b.location === '在家').length,
           rental: books.value.filter(b => b.location === '在租屋處').length,
           wishlist: wishlistBooks.value.length,
-          sold: books.value.filter(b => b.location === '售出').length
+          sold: books.value.filter(b => b.location === '售出').length,
+          usedCount: ownedBooks.value.filter(b => b.type === '二手').length
         }));
 
         const analytics = computed(() => {
@@ -782,14 +924,15 @@
           showDashboard, allSourceOptions, locationFilters, readFilters,
           filteredArchiveBooks, wishlistBooks, currentlyReadingBooks, stats, analytics,
           libraryRecords, activeLoans, returnedHistory, libStats, libCategories,
-          sourceGroups, activeSource, totalAssetValue, recentIntake,
+          sourceGroups, topSourceLocation, activeSource, totalAssetValue, recentIntake,
+          selectedYear, yearStats, nextYearGoal, saveGoal,
           showAddLib, filterLibYear, libSearchQuery, newLib, addLibraryRecord, markAsReturned, deleteLibRecord, copyLibToWishlist,
-          showAddWish, newWish, addWishItem, posts, showNewPost, newPost, addPost: () => {}, deletePost: () => {},
+          showAddWish, newWish, addWishItem, posts,
           syncState, syncStatusText, syncStatusClass, isSaving, hasUnsavedChanges, saveToCloud,
           isScanning, manualIsbn, lookupManualIsbn, startScanner, stopScanner, openEslite,
           formatIndex, addBook, deleteBook, updateBookField, markAsFinished, moveToOwned,
-          getLocationBadgeStyle, getReadingStatusStyle, handleSourceSelect: () => {}, handleNewBookSourceSelect: () => {},
-          fetchFromCloud, exportData, importData, resetToDefault
+          getLocationBadgeStyle, getReadingStatusStyle,
+          fetchFromCloud, exportData, importData
         };
       }
     }).mount('#app');
